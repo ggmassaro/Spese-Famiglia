@@ -5,9 +5,16 @@ Web-app per tracciare le spese quotidiane familiari, usata da due persone (marit
 
 ## Stack tecnologico
 - Frontend: HTML/CSS/JS vanilla + Bootstrap
-- Database: Firebase Firestore (piano gratuito, sincronizzazione in tempo reale)
+- Database: Supabase (Postgres, piano gratuito, sincronizzazione in tempo reale tramite Supabase Realtime)
 - Hosting: GitHub Pages (gratuito)
-- Autenticazione: Firebase Authentication (da definire nel dettaglio in fase tecnica)
+- Autenticazione: Supabase Auth, email/password (da definire nel dettaglio in fase tecnica)
+
+Nota: inizialmente scelto Firebase Firestore, poi sostituito con Supabase perché
+Firebase richiede il collegamento di una carta di credito anche solo per creare
+il database Firestore (pur restando nelle soglie gratuite). Supabase non richiede
+alcun metodo di pagamento sul piano gratuito. Compromesso accettato: i progetti
+gratuiti Supabase vanno in pausa dopo 7 giorni di inattività e vanno "risvegliati"
+manualmente dal pannello di controllo.
 
 ## Vincoli di progetto
 - Deve essere completamente gratuito (nessun servizio a pagamento)
@@ -57,16 +64,18 @@ Supermercato, Negozio, Bar, Ristorante, Online, Farmacia, Benzinaio, Gite Famili
 
 ## Log decisioni chiave
 - [Data odierna] Definiti requisiti completi tramite briefing in chat su Claude.ai
-- Scelto Firebase Firestore invece di Supabase per maggiore semplicità di setup per un principiante
+- Scelto inizialmente Firebase Firestore, poi sostituito con Supabase perché Firebase 
+  richiede una carta di credito collegata per creare il database (anche restando 
+  nelle soglie gratuite), mentre Supabase no
 - Rimossa la funzione di riconoscimento foto scontrino per mantenere il progetto gratuito al 100%
 - Risolta sovrapposizione tra Voce spesa e Gruppo spesa (Bar/Ristorante spostati a Gruppo spesa; sostituiti in Voce spesa con Colazione/Pranzo/Cena)
 - Budget semplificato a solo periodo mensile (niente settimanale, per ora)
 
 ## Stato di avanzamento
-- [ ] Creazione account GitHub
-- [ ] Creazione account/progetto Firebase
-- [ ] Setup struttura progetto in Claude Code
-- [ ] Connessione a Firebase verificata
+- [x] Creazione account GitHub
+- [ ] Creazione account/progetto Supabase
+- [x] Setup struttura progetto in Claude Code
+- [ ] Connessione a Supabase verificata
 - [ ] Form inserimento spesa funzionante
 - [ ] Dashboard con grafici funzionante
 - [ ] Funzionalità Budget funzionante
