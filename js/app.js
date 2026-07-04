@@ -59,6 +59,23 @@ logoutButton.addEventListener("click", handleLogout);
 checkSession();
 
 // ---------------------------------------------------------------------------
+// Banner promemoria fine mese
+// ---------------------------------------------------------------------------
+
+const promemoriaFineMeseBanner = document.getElementById("promemoria-fine-mese-banner");
+
+function mostraPromemoriaFineMeseSeNecessario() {
+  const oggi = new Date();
+  const giorniNelMese = new Date(oggi.getFullYear(), oggi.getMonth() + 1, 0).getDate();
+
+  if (oggi.getDate() >= giorniNelMese - 1) {
+    promemoriaFineMeseBanner.classList.remove("d-none");
+  }
+}
+
+mostraPromemoriaFineMeseSeNecessario();
+
+// ---------------------------------------------------------------------------
 // Sezione "Inserisci Spesa"
 // ---------------------------------------------------------------------------
 
@@ -493,7 +510,11 @@ function escapeCsvCampo(valore) {
 }
 
 function creaRigaCsv(campi) {
-  return campi.map(escapeCsvCampo).join(",");
+  return campi.map(escapeCsvCampo).join(";");
+}
+
+function formatImportoCsv(valore) {
+  return Number(valore).toFixed(2).replace(".", ",");
 }
 
 function esportaCsvMeseSelezionato() {
@@ -504,7 +525,7 @@ function esportaCsvMeseSelezionato() {
   const righe = speseMese.map((spesa) =>
     creaRigaCsv([
       formatDataIt(spesa.data),
-      spesa.importo,
+      formatImportoCsv(spesa.importo),
       spesa.voce_spesa,
       spesa.gruppo_spesa,
       spesa.metodo_pagamento,
@@ -538,6 +559,8 @@ const budgetTabButton = document.getElementById("budget-tab");
 const budgetMeseInput = document.getElementById("budget-mese-selezionato");
 const budgetImportBanner = document.getElementById("budget-import-banner");
 const budgetCopiaMeseScorsoButton = document.getElementById("budget-copia-mese-scorso-button");
+const budgetNuovoButton = document.getElementById("budget-nuovo-button");
+const budgetFormContainer = document.getElementById("budget-form-container");
 const budgetForm = document.getElementById("budget-form");
 const budgetNomeInput = document.getElementById("budget-nome");
 const budgetVociSelect = document.getElementById("budget-voci");
@@ -636,6 +659,16 @@ function nascondiBannerImportBudget() {
   budgetMesePrecedenteCache = [];
 }
 
+function apriFormBudget() {
+  budgetFormContainer.classList.remove("d-none");
+  budgetNuovoButton.classList.add("d-none");
+}
+
+function chiudiFormBudget() {
+  budgetFormContainer.classList.add("d-none");
+  budgetNuovoButton.classList.remove("d-none");
+}
+
 function resetBudgetForm() {
   budgetNomeInput.value = "";
   Array.from(budgetVociSelect.options).forEach((opt) => (opt.selected = false));
@@ -643,7 +676,6 @@ function resetBudgetForm() {
   budgetImportoInput.value = "";
 
   editingBudgetId = null;
-  budgetAnnullaModificaButton.classList.add("d-none");
   budgetSubmitButton.textContent = "Salva budget";
 }
 
@@ -661,9 +693,9 @@ function iniziaModificaBudget(id) {
   });
   budgetImportoInput.value = budget.importo_mensile;
 
-  budgetAnnullaModificaButton.classList.remove("d-none");
   budgetSubmitButton.textContent = "Aggiorna budget";
   nascondiFeedbackBudget();
+  apriFormBudget();
 }
 
 async function eliminaBudget(id) {
@@ -808,6 +840,7 @@ async function ricaricaBudgetETotali() {
 async function inizializzaBudgetTab() {
   nascondiFeedbackBudget();
   resetBudgetForm();
+  chiudiFormBudget();
   budgetBozze = [];
   renderBozze();
 
@@ -920,9 +953,17 @@ budgetLista.addEventListener("click", (event) => {
   }
 });
 
+budgetNuovoButton.addEventListener("click", () => {
+  resetBudgetForm();
+  nascondiFeedbackBudget();
+  apriFormBudget();
+  budgetNomeInput.focus();
+});
+
 budgetAnnullaModificaButton.addEventListener("click", () => {
   resetBudgetForm();
   nascondiFeedbackBudget();
+  chiudiFormBudget();
 });
 
 budgetForm.addEventListener("submit", async (event) => {
