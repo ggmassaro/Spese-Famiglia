@@ -128,6 +128,16 @@ function escapeHtmlAttr(testo) {
   return escapeHtml(testo).replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 
+const PALETTE_VOCI = [
+  "#2c7ef8", "#38c6f4", "#8f6cff", "#4fd6c8", "#5c8df6",
+  "#29a8e0", "#7aa6ff", "#3ddbd9", "#6f7bf7", "#45b8e8",
+];
+
+function getColoreVoce(nomeVoce) {
+  const indice = vociSpesaCache.findIndex((v) => v.nome === nomeVoce);
+  return PALETTE_VOCI[(indice === -1 ? 0 : indice) % PALETTE_VOCI.length];
+}
+
 function mostraFeedbackSpesa(messaggio, tipo) {
   spesaFeedback.textContent = messaggio;
   spesaFeedback.className = `alert alert-${tipo} mt-3`;
@@ -260,7 +270,7 @@ function renderSpeseTable() {
         <tr>
           <td>${formatDataIt(spesa.data)}</td>
           <td>${formatImporto(spesa.importo)}</td>
-          <td>${escapeHtml(spesa.voce_spesa)}</td>
+          <td><span class="voce-dot" style="background:${getColoreVoce(spesa.voce_spesa)}"></span>${escapeHtml(spesa.voce_spesa)}</td>
           <td>${escapeHtml(spesa.gruppo_spesa)}</td>
           <td>${escapeHtml(spesa.metodo_pagamento)}</td>
           <td>${escapeHtml(spesa.nota)}</td>
@@ -389,7 +399,8 @@ spesaForm.addEventListener("submit", async (event) => {
 
 async function caricaDatiInserimentoSpesa() {
   spesaDataInput.value = spesaDataInput.value || dataOdiernaISO();
-  await Promise.all([caricaVociSpesa(), caricaGruppiSpesa(), caricaSpeseRecenti()]);
+  await Promise.all([caricaVociSpesa(), caricaGruppiSpesa()]);
+  await caricaSpeseRecenti();
 }
 
 // ---------------------------------------------------------------------------
@@ -451,11 +462,13 @@ function aggiornaDashboardMese() {
   const aggregatoVoce = aggregaImportiPerChiave(speseMese, "voce_spesa");
   const aggregatoGruppo = aggregaImportiPerChiave(speseMese, "gruppo_spesa");
 
+  const etichetteVoce = Object.keys(aggregatoVoce);
+
   disegnaGrafico("dashboard-chart-voce", {
     type: "pie",
     data: {
-      labels: Object.keys(aggregatoVoce),
-      datasets: [{ data: Object.values(aggregatoVoce) }],
+      labels: etichetteVoce,
+      datasets: [{ data: Object.values(aggregatoVoce), backgroundColor: etichetteVoce.map(getColoreVoce) }],
     },
     options: { plugins: { legend: { position: "bottom" } } },
   });
@@ -738,13 +751,19 @@ function renderBudgetLista() {
       const percentualeBarra = Math.min(Math.max(percentuale, 0), 100);
 
       let coloreBarra = "bg-success";
+      let statoClasse = "status-ok";
       if (percentuale > 100) {
         coloreBarra = "bg-danger";
+        statoClasse = "status-over";
       } else if (percentuale >= 80) {
         coloreBarra = "bg-warning";
+        statoClasse = "status-warn";
       }
 
       const rimanenti = importo - actual;
+      const statoTesto = percentuale > 100
+        ? `Sforato di ${formatImporto(Math.abs(rimanenti))}`
+        : `Rimangono ${formatImporto(rimanenti)}`;
 
       const badgeVoci = (budget.voci_spesa || [])
         .map((v) => `<span class="badge text-bg-secondary me-1">${escapeHtml(v)}</span>`)
@@ -762,7 +781,8 @@ function renderBudgetLista() {
               <div class="progress mb-2" role="progressbar" aria-valuenow="${percentualeBarra}" aria-valuemin="0" aria-valuemax="100">
                 <div class="progress-bar ${coloreBarra}" style="width: ${percentualeBarra}%"></div>
               </div>
-              <div class="small mb-3">Speso ${formatImporto(actual)} di ${formatImporto(importo)} - Rimangono ${formatImporto(rimanenti)}</div>
+              <div class="small mb-2">Speso ${formatImporto(actual)} di ${formatImporto(importo)}</div>
+              <div class="mb-3"><span class="status-pill ${statoClasse}">${statoTesto}</span></div>
               <div class="d-flex gap-2">
                 <button type="button" class="btn btn-sm btn-outline-primary btn-modifica-budget" data-id="${budget.id}">Modifica</button>
                 <button type="button" class="btn btn-sm btn-outline-danger btn-elimina-budget" data-id="${budget.id}">Elimina</button>
