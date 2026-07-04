@@ -73,10 +73,13 @@ Supermercato, Negozio, Bar, Ristorante, Online, Farmacia, Benzinaio, Gite Famili
 
 ## Stato di avanzamento
 - [x] Creazione account GitHub
-- [ ] Creazione account/progetto Supabase
+- [x] Creazione account/progetto Supabase
 - [x] Setup struttura progetto in Claude Code
-- [ ] Connessione a Supabase verificata
-- [ ] Form inserimento spesa funzionante
-- [ ] Dashboard con grafici funzionante
+- [x] Connessione a Supabase configurata nel codice
+- [x] Autenticazione utenti configurata (email/password, registrazione pubblica disattivata, 2 utenti creati)
+- [x] Tabelle database create (spese, budget, voci_spesa, gruppi_spesa) con regole di sicurezza (RLS)
+- [x] Login/logout funzionante nell'app (testato: errore credenziali, accesso, logout)
+- [x] Form inserimento spesa funzionante (testato: salvataggio, modifica, cancellazione, aggiunta nuove voci/gruppi)
+- [x] Dashboard con grafici funzionante (testato: totali, torte, trend, export CSV, layout mobile)
 - [ ] Funzionalità Budget funzionante
-- [ ] Deploy su GitHub Pages
+- [x] Deploy su GitHub Pages (anticipato per consentire test su mobile: https://ggmassaro.github.io/Spese-Famiglia/)
