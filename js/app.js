@@ -13,6 +13,7 @@ function showApp(email) {
   loginScreen.classList.add("d-none");
   appContainer.classList.remove("d-none");
   userEmailLabel.textContent = email || "";
+  caricaDatiInserimentoSpesa();
 }
 
 function showLogin() {
@@ -56,3 +57,316 @@ loginButton.addEventListener("click", handleLogin);
 logoutButton.addEventListener("click", handleLogout);
 
 checkSession();
+
+// ---------------------------------------------------------------------------
+// Sezione "Inserisci Spesa"
+// ---------------------------------------------------------------------------
+
+const NUOVA_VOCE_VALORE = "__nuova_voce__";
+const NUOVA_VOCE_TESTO = "+ Aggiungi nuova voce...";
+const NUOVO_GRUPPO_VALORE = "__nuovo_gruppo__";
+const NUOVO_GRUPPO_TESTO = "+ Aggiungi nuovo gruppo...";
+
+const spesaForm = document.getElementById("spesa-form");
+const spesaDataInput = document.getElementById("spesa-data");
+const spesaImportoInput = document.getElementById("spesa-importo");
+const spesaVoceSelect = document.getElementById("spesa-voce");
+const spesaGruppoSelect = document.getElementById("spesa-gruppo");
+const spesaMetodoSelect = document.getElementById("spesa-metodo");
+const spesaNotaInput = document.getElementById("spesa-nota");
+const spesaFeedback = document.getElementById("spesa-feedback");
+const spesaSubmitButton = document.getElementById("spesa-submit-button");
+const annullaModificaButton = document.getElementById("annulla-modifica-button");
+const speseTableBody = document.getElementById("spese-table-body");
+
+let vociSpesaCache = [];
+let gruppiSpesaCache = [];
+let speseCache = [];
+let ultimoValoreVoce = "";
+let ultimoValoreGruppo = "";
+let editingSpesaId = null;
+
+function dataOdiernaISO() {
+  const oggi = new Date();
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${oggi.getFullYear()}-${pad(oggi.getMonth() + 1)}-${pad(oggi.getDate())}`;
+}
+
+function formatDataIt(dataISO) {
+  const [anno, mese, giorno] = dataISO.split("-");
+  return `${giorno}/${mese}/${anno}`;
+}
+
+function formatImporto(valore) {
+  return new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(valore);
+}
+
+function escapeHtml(testo) {
+  const div = document.createElement("div");
+  div.textContent = testo ?? "";
+  return div.innerHTML;
+}
+
+function mostraFeedbackSpesa(messaggio, tipo) {
+  spesaFeedback.textContent = messaggio;
+  spesaFeedback.className = `alert alert-${tipo} mt-3`;
+}
+
+function nascondiFeedbackSpesa() {
+  spesaFeedback.classList.add("d-none");
+}
+
+function renderVoceOptions(selezionata) {
+  spesaVoceSelect.innerHTML = "";
+
+  const placeholder = document.createElement("option");
+  placeholder.value = "";
+  placeholder.disabled = true;
+  placeholder.textContent = "-- Seleziona voce --";
+  spesaVoceSelect.appendChild(placeholder);
+
+  vociSpesaCache.forEach((voce) => {
+    const opt = document.createElement("option");
+    opt.value = voce.nome;
+    opt.textContent = voce.nome;
+    spesaVoceSelect.appendChild(opt);
+  });
+
+  const nuova = document.createElement("option");
+  nuova.value = NUOVA_VOCE_VALORE;
+  nuova.textContent = NUOVA_VOCE_TESTO;
+  spesaVoceSelect.appendChild(nuova);
+
+  spesaVoceSelect.value = selezionata || "";
+  ultimoValoreVoce = spesaVoceSelect.value;
+}
+
+function renderGruppoOptions(selezionata) {
+  spesaGruppoSelect.innerHTML = "";
+
+  const placeholder = document.createElement("option");
+  placeholder.value = "";
+  placeholder.disabled = true;
+  placeholder.textContent = "-- Seleziona gruppo --";
+  spesaGruppoSelect.appendChild(placeholder);
+
+  gruppiSpesaCache.forEach((gruppo) => {
+    const opt = document.createElement("option");
+    opt.value = gruppo.nome;
+    opt.textContent = gruppo.nome;
+    spesaGruppoSelect.appendChild(opt);
+  });
+
+  const nuovo = document.createElement("option");
+  nuovo.value = NUOVO_GRUPPO_VALORE;
+  nuovo.textContent = NUOVO_GRUPPO_TESTO;
+  spesaGruppoSelect.appendChild(nuovo);
+
+  spesaGruppoSelect.value = selezionata || "";
+  ultimoValoreGruppo = spesaGruppoSelect.value;
+}
+
+async function caricaVociSpesa(selezionata) {
+  const { data, error } = await db.from("voci_spesa").select("*").order("nome");
+  if (!error) {
+    vociSpesaCache = data || [];
+  }
+  renderVoceOptions(selezionata);
+}
+
+async function caricaGruppiSpesa(selezionata) {
+  const { data, error } = await db.from("gruppi_spesa").select("*").order("nome");
+  if (!error) {
+    gruppiSpesaCache = data || [];
+  }
+  renderGruppoOptions(selezionata);
+}
+
+async function gestisciNuovaVoce() {
+  const nome = window.prompt("Nome nuova voce di spesa:");
+  if (!nome || !nome.trim()) {
+    spesaVoceSelect.value = ultimoValoreVoce;
+    return;
+  }
+
+  const { error } = await db.from("voci_spesa").insert({ nome: nome.trim() });
+  if (error) {
+    mostraFeedbackSpesa("Errore nella creazione della voce: " + error.message, "danger");
+    spesaVoceSelect.value = ultimoValoreVoce;
+    return;
+  }
+
+  await caricaVociSpesa(nome.trim());
+}
+
+async function gestisciNuovoGruppo() {
+  const nome = window.prompt("Nome nuovo gruppo di spesa:");
+  if (!nome || !nome.trim()) {
+    spesaGruppoSelect.value = ultimoValoreGruppo;
+    return;
+  }
+
+  const { error } = await db.from("gruppi_spesa").insert({ nome: nome.trim() });
+  if (error) {
+    mostraFeedbackSpesa("Errore nella creazione del gruppo: " + error.message, "danger");
+    spesaGruppoSelect.value = ultimoValoreGruppo;
+    return;
+  }
+
+  await caricaGruppiSpesa(nome.trim());
+}
+
+spesaVoceSelect.addEventListener("change", () => {
+  if (spesaVoceSelect.value === NUOVA_VOCE_VALORE) {
+    gestisciNuovaVoce();
+  } else {
+    ultimoValoreVoce = spesaVoceSelect.value;
+  }
+});
+
+spesaGruppoSelect.addEventListener("change", () => {
+  if (spesaGruppoSelect.value === NUOVO_GRUPPO_VALORE) {
+    gestisciNuovoGruppo();
+  } else {
+    ultimoValoreGruppo = spesaGruppoSelect.value;
+  }
+});
+
+function renderSpeseTable() {
+  speseTableBody.innerHTML = speseCache
+    .map(
+      (spesa) => `
+        <tr>
+          <td>${formatDataIt(spesa.data)}</td>
+          <td>${formatImporto(spesa.importo)}</td>
+          <td>${escapeHtml(spesa.voce_spesa)}</td>
+          <td>${escapeHtml(spesa.gruppo_spesa)}</td>
+          <td>${escapeHtml(spesa.metodo_pagamento)}</td>
+          <td>${escapeHtml(spesa.nota)}</td>
+          <td class="text-nowrap">
+            <button type="button" class="btn btn-sm btn-outline-primary btn-modifica-spesa" data-id="${spesa.id}">Modifica</button>
+            <button type="button" class="btn btn-sm btn-outline-danger btn-elimina-spesa" data-id="${spesa.id}">Elimina</button>
+          </td>
+        </tr>
+      `
+    )
+    .join("");
+}
+
+async function caricaSpeseRecenti() {
+  const { data, error } = await db
+    .from("spese")
+    .select("*")
+    .order("data", { ascending: false })
+    .order("created_at", { ascending: false })
+    .limit(20);
+
+  if (!error) {
+    speseCache = data || [];
+    renderSpeseTable();
+  }
+}
+
+function resetSpesaForm() {
+  const metodoAttuale = spesaMetodoSelect.value;
+
+  spesaDataInput.value = dataOdiernaISO();
+  spesaImportoInput.value = "";
+  renderVoceOptions("");
+  renderGruppoOptions("");
+  spesaMetodoSelect.value = metodoAttuale;
+  spesaNotaInput.value = "";
+
+  editingSpesaId = null;
+  annullaModificaButton.classList.add("d-none");
+  spesaSubmitButton.textContent = "Salva spesa";
+}
+
+function iniziaModificaSpesa(id) {
+  const spesa = speseCache.find((s) => String(s.id) === String(id));
+  if (!spesa) return;
+
+  editingSpesaId = spesa.id;
+  spesaDataInput.value = spesa.data;
+  spesaImportoInput.value = spesa.importo;
+  renderVoceOptions(spesa.voce_spesa);
+  renderGruppoOptions(spesa.gruppo_spesa);
+  spesaMetodoSelect.value = spesa.metodo_pagamento;
+  spesaNotaInput.value = spesa.nota || "";
+
+  annullaModificaButton.classList.remove("d-none");
+  spesaSubmitButton.textContent = "Aggiorna spesa";
+  nascondiFeedbackSpesa();
+}
+
+async function eliminaSpesa(id) {
+  const confermato = window.confirm("Eliminare questa spesa?");
+  if (!confermato) return;
+
+  const { error } = await db.from("spese").delete().eq("id", id);
+  if (error) {
+    mostraFeedbackSpesa("Errore durante l'eliminazione: " + error.message, "danger");
+    return;
+  }
+
+  if (String(editingSpesaId) === String(id)) {
+    resetSpesaForm();
+  }
+
+  await caricaSpeseRecenti();
+}
+
+speseTableBody.addEventListener("click", (event) => {
+  const bottoneModifica = event.target.closest(".btn-modifica-spesa");
+  if (bottoneModifica) {
+    iniziaModificaSpesa(bottoneModifica.dataset.id);
+    return;
+  }
+
+  const bottoneElimina = event.target.closest(".btn-elimina-spesa");
+  if (bottoneElimina) {
+    eliminaSpesa(bottoneElimina.dataset.id);
+  }
+});
+
+annullaModificaButton.addEventListener("click", () => {
+  resetSpesaForm();
+  nascondiFeedbackSpesa();
+});
+
+spesaForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  nascondiFeedbackSpesa();
+
+  if (!spesaForm.checkValidity()) {
+    spesaForm.reportValidity();
+    return;
+  }
+
+  const payload = {
+    data: spesaDataInput.value,
+    importo: parseFloat(spesaImportoInput.value),
+    voce_spesa: spesaVoceSelect.value,
+    gruppo_spesa: spesaGruppoSelect.value,
+    metodo_pagamento: spesaMetodoSelect.value,
+    nota: spesaNotaInput.value.trim() || null,
+  };
+
+  const { error } = editingSpesaId
+    ? await db.from("spese").update(payload).eq("id", editingSpesaId)
+    : await db.from("spese").insert(payload);
+
+  if (error) {
+    mostraFeedbackSpesa("Errore durante il salvataggio: " + error.message, "danger");
+    return;
+  }
+
+  mostraFeedbackSpesa("Spesa salvata correttamente", "success");
+  resetSpesaForm();
+  await caricaSpeseRecenti();
+});
+
+async function caricaDatiInserimentoSpesa() {
+  spesaDataInput.value = spesaDataInput.value || dataOdiernaISO();
+  await Promise.all([caricaVociSpesa(), caricaGruppiSpesa(), caricaSpeseRecenti()]);
+}
