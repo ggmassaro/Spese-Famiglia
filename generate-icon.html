@@ -54,6 +54,49 @@
     const canvas = document.getElementById("icona-canvas");
     const ctx = canvas.getContext("2d");
 
+    function poligonoArrotondato(contesto, punti, raggio) {
+      const ultimo = punti[punti.length - 1];
+      const primo = punti[0];
+      contesto.beginPath();
+      contesto.moveTo((ultimo[0] + primo[0]) / 2, (ultimo[1] + primo[1]) / 2);
+      for (let i = 0; i < punti.length; i++) {
+        const corrente = punti[i];
+        const successivo = punti[(i + 1) % punti.length];
+        contesto.arcTo(corrente[0], corrente[1], successivo[0], successivo[1], raggio);
+      }
+      contesto.closePath();
+    }
+
+    function disegnaPersona(centroX, centroYTesta, raggioTesta, alpha) {
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = "#ffffff";
+
+      // Testa
+      ctx.beginPath();
+      ctx.arc(centroX, centroYTesta, raggioTesta, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Corpo: trapezoide arrotondato che si allarga verso il basso
+      const spallaY = centroYTesta + raggioTesta * 0.7;
+      const bodyBottomY = spallaY + raggioTesta * 3.3;
+      const metaLarghezzaAlto = raggioTesta * 1.0;
+      const metaLarghezzaBasso = raggioTesta * 1.7;
+      const raggioAngoli = raggioTesta * 0.5;
+
+      const punti = [
+        [centroX - metaLarghezzaAlto, spallaY],
+        [centroX + metaLarghezzaAlto, spallaY],
+        [centroX + metaLarghezzaBasso, bodyBottomY],
+        [centroX - metaLarghezzaBasso, bodyBottomY],
+      ];
+
+      poligonoArrotondato(ctx, punti, raggioAngoli);
+      ctx.fill();
+
+      ctx.restore();
+    }
+
     function disegnaIcona() {
       const gradiente = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
       gradiente.addColorStop(0, "#7b5cff");
@@ -62,11 +105,12 @@
       ctx.fillStyle = gradiente;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      ctx.fillStyle = "#ffffff";
-      ctx.font = "700 280px 'Poppins', sans-serif";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText("€", canvas.width / 2, canvas.height / 2);
+      // Adulto sinistro e adulto destro (simmetrici, stessa dimensione)
+      disegnaPersona(140, 190, 70, 1);
+      disegnaPersona(372, 190, 70, 1);
+
+      // Figura centrale piu piccola, in primo piano (disegnata per ultima, leggermente trasparente)
+      disegnaPersona(256, 250, 50, 0.92);
     }
 
     function scaricaPng(dimensione, nomeFile) {
@@ -83,7 +127,7 @@
       document.body.removeChild(link);
     }
 
-    document.fonts.ready.then(disegnaIcona);
+    disegnaIcona();
 
     document.getElementById("scarica-512").addEventListener("click", () => scaricaPng(512, "icon-512.png"));
     document.getElementById("scarica-192").addEventListener("click", () => scaricaPng(192, "icon-192.png"));
