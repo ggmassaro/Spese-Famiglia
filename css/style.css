@@ -6,8 +6,8 @@
   --bg-card-alt: #14141f;
   --border-subtle: #26263a;
   --text-primary: #f2f2f5;
-  --text-secondary: #9a99a8;
-  --text-muted: #8f8ea0;
+  --text-secondary: #b8b7c5;
+  --text-muted: #a3a2b0;
   --gradient-warm: linear-gradient(135deg, #7b5cff, #e85fb0, #ff9a5a);
   --status-ok-bg: #39ff8c;
   --status-ok-text: #003d1a;
@@ -251,4 +251,46 @@ label {
   border-radius: 50%;
   margin-right: 6px;
   vertical-align: middle;
+}
+
+/* Card mobile "Spese recenti" */
+.spesa-card-mobile {
+  background: var(--bg-card);
+  border-radius: 16px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+}
+
+.spesa-card-mobile .spesa-card-riga-alto {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.spesa-card-mobile .spesa-card-importo {
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.spesa-card-mobile .spesa-card-riga {
+  margin-top: 6px;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.spesa-card-mobile .spesa-card-azioni {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.spesa-card-mobile .spesa-card-azioni .btn {
+  flex: 1;
+}
+
+/* Adattamenti mobile (sotto i 576px) */
+@media (max-width: 576px) {
+  .app-title {
+    font-size: 1.5rem;
+  }
 }

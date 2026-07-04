@@ -81,5 +81,26 @@ Supermercato, Negozio, Bar, Ristorante, Online, Farmacia, Benzinaio, Gite Famili
 - [x] Login/logout funzionante nell'app (testato: errore credenziali, accesso, logout)
 - [x] Form inserimento spesa funzionante (testato: salvataggio, modifica, cancellazione, aggiunta nuove voci/gruppi)
 - [x] Dashboard con grafici funzionante (testato: totali, torte, trend, export CSV, layout mobile)
-- [ ] Funzionalità Budget funzionante
+- [x] Funzionalità Budget funzionante (testato: creazione, actual vs budget, colori soglia, modifica, eliminazione, copia dal mese precedente)
+
+## Fase di costruzione conclusa
+Tutte le funzionalità pianificate sono state costruite, testate e pubblicate 
+online (https://ggmassaro.github.io/Spese-Famiglia/), con stile grafico 
+personalizzato (tema scuro, gradiente viola-rosa-arancione su azioni principali, 
+palette blu-azzurro per categorie, icona famiglia stilizzata per la schermata 
+home) e rifiniture di leggibilità/layout mobile.
+
+## Prossimi passi: fase di uso reale
+- Test con la moglie dal suo account/telefono (sincronizzazione in tempo reale)
+- Uso quotidiano per alcuni giorni/settimane
+- Verificare se le liste Voce/Gruppo spesa coprono bene le spese reali
+- Raccogliere eventuali problemi o nuove esigenze emerse dall'uso, da affrontare 
+  con lo stesso metodo (briefing in chat -> prompt per Claude Code -> test)
+
+Nota tecnica emersa durante i test: dopo ogni pubblicazione di modifiche al 
+codice (git push), la cache del browser sul telefono può mostrare temporaneamente 
+la versione precedente. Soluzione: svuotare la cache del browser o aprire in 
+modalità incognito. Non riguarda i dati (spese/budget), solo i file di codice, 
+e non sarà un problema nell'uso quotidiano una volta che il codice smetterà 
+di cambiare frequentemente.
 - [x] Deploy su GitHub Pages (anticipato per consentire test su mobile: https://ggmassaro.github.io/Spese-Famiglia/)

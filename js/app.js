@@ -95,6 +95,7 @@ const spesaFeedback = document.getElementById("spesa-feedback");
 const spesaSubmitButton = document.getElementById("spesa-submit-button");
 const annullaModificaButton = document.getElementById("annulla-modifica-button");
 const speseTableBody = document.getElementById("spese-table-body");
+const speseCardsMobile = document.getElementById("spese-cards-mobile");
 
 let vociSpesaCache = [];
 let gruppiSpesaCache = [];
@@ -153,7 +154,7 @@ function renderVoceOptions(selezionata) {
   const placeholder = document.createElement("option");
   placeholder.value = "";
   placeholder.disabled = true;
-  placeholder.textContent = "-- Seleziona voce --";
+  placeholder.textContent = "Seleziona...";
   spesaVoceSelect.appendChild(placeholder);
 
   vociSpesaCache.forEach((voce) => {
@@ -178,7 +179,7 @@ function renderGruppoOptions(selezionata) {
   const placeholder = document.createElement("option");
   placeholder.value = "";
   placeholder.disabled = true;
-  placeholder.textContent = "-- Seleziona gruppo --";
+  placeholder.textContent = "Seleziona...";
   spesaGruppoSelect.appendChild(placeholder);
 
   gruppiSpesaCache.forEach((gruppo) => {
@@ -282,6 +283,29 @@ function renderSpeseTable() {
       `
     )
     .join("");
+
+  speseCardsMobile.innerHTML = speseCache
+    .map(
+      (spesa) => `
+        <div class="spesa-card-mobile">
+          <div class="spesa-card-riga-alto">
+            <span>${formatDataIt(spesa.data)}</span>
+            <span class="spesa-card-importo">${formatImporto(spesa.importo)}</span>
+          </div>
+          <div class="spesa-card-riga">
+            <span class="voce-dot" style="background:${getColoreVoce(spesa.voce_spesa)}"></span>${escapeHtml(spesa.voce_spesa)} - ${escapeHtml(spesa.gruppo_spesa)}
+          </div>
+          <div class="spesa-card-riga">
+            ${escapeHtml(spesa.metodo_pagamento)}${spesa.nota ? ` - ${escapeHtml(spesa.nota)}` : ""}
+          </div>
+          <div class="spesa-card-azioni">
+            <button type="button" class="btn btn-sm btn-outline-primary btn-modifica-spesa" data-id="${spesa.id}">Modifica</button>
+            <button type="button" class="btn btn-sm btn-outline-danger btn-elimina-spesa" data-id="${spesa.id}">Elimina</button>
+          </div>
+        </div>
+      `
+    )
+    .join("");
 }
 
 async function caricaSpeseRecenti() {
@@ -347,7 +371,7 @@ async function eliminaSpesa(id) {
   await caricaSpeseRecenti();
 }
 
-speseTableBody.addEventListener("click", (event) => {
+function gestisciClickAzioniSpesa(event) {
   const bottoneModifica = event.target.closest(".btn-modifica-spesa");
   if (bottoneModifica) {
     iniziaModificaSpesa(bottoneModifica.dataset.id);
@@ -358,7 +382,10 @@ speseTableBody.addEventListener("click", (event) => {
   if (bottoneElimina) {
     eliminaSpesa(bottoneElimina.dataset.id);
   }
-});
+}
+
+speseTableBody.addEventListener("click", gestisciClickAzioniSpesa);
+speseCardsMobile.addEventListener("click", gestisciClickAzioniSpesa);
 
 annullaModificaButton.addEventListener("click", () => {
   resetSpesaForm();
@@ -414,6 +441,8 @@ const dashboardExportCsvButton = document.getElementById("dashboard-export-csv-b
 
 let tutteLeSpeseCache = [];
 const chartInstances = {};
+
+Chart.defaults.color = "#cfced9";
 
 const NOMI_MESI_IT = [
   "Gen", "Feb", "Mar", "Apr", "Mag", "Giu",
