@@ -370,3 +370,158 @@ async function caricaDatiInserimentoSpesa() {
   spesaDataInput.value = spesaDataInput.value || dataOdiernaISO();
   await Promise.all([caricaVociSpesa(), caricaGruppiSpesa(), caricaSpeseRecenti()]);
 }
+
+// ---------------------------------------------------------------------------
+// Sezione "Dashboard"
+// ---------------------------------------------------------------------------
+
+const dashboardTabButton = document.getElementById("dashboard-tab");
+const dashboardMeseFiltro = document.getElementById("dashboard-mese-filtro");
+const dashboardTotaleMeseEl = document.getElementById("dashboard-totale-mese");
+const dashboardExportCsvButton = document.getElementById("dashboard-export-csv-button");
+
+let tutteLeSpeseCache = [];
+const chartInstances = {};
+
+const NOMI_MESI_IT = [
+  "Gen", "Feb", "Mar", "Apr", "Mag", "Giu",
+  "Lug", "Ago", "Set", "Ott", "Nov", "Dic",
+];
+
+function meseCorrenteISO() {
+  const oggi = new Date();
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${oggi.getFullYear()}-${pad(oggi.getMonth() + 1)}`;
+}
+
+function formatMeseLabel(meseISO) {
+  const [anno, mese] = meseISO.split("-");
+  return `${NOMI_MESI_IT[parseInt(mese, 10) - 1]} ${anno}`;
+}
+
+function aggregaImportiPerChiave(spese, chiave) {
+  return spese.reduce((aggregato, spesa) => {
+    const chiaveValore = spesa[chiave];
+    aggregato[chiaveValore] = (aggregato[chiaveValore] || 0) + Number(spesa.importo);
+    return aggregato;
+  }, {});
+}
+
+function disegnaGrafico(canvasId, config) {
+  if (chartInstances[canvasId]) {
+    chartInstances[canvasId].destroy();
+  }
+  const canvas = document.getElementById(canvasId);
+  chartInstances[canvasId] = new Chart(canvas, config);
+}
+
+function filtraSpesePerMese(mese) {
+  return tutteLeSpeseCache.filter((spesa) => spesa.data.slice(0, 7) === mese);
+}
+
+function aggiornaDashboardMese() {
+  const mese = dashboardMeseFiltro.value;
+  if (!mese) return;
+
+  const speseMese = filtraSpesePerMese(mese);
+  const totale = speseMese.reduce((somma, spesa) => somma + Number(spesa.importo), 0);
+  dashboardTotaleMeseEl.textContent = formatImporto(totale);
+
+  const aggregatoVoce = aggregaImportiPerChiave(speseMese, "voce_spesa");
+  const aggregatoGruppo = aggregaImportiPerChiave(speseMese, "gruppo_spesa");
+
+  disegnaGrafico("dashboard-chart-voce", {
+    type: "pie",
+    data: {
+      labels: Object.keys(aggregatoVoce),
+      datasets: [{ data: Object.values(aggregatoVoce) }],
+    },
+    options: { plugins: { legend: { position: "bottom" } } },
+  });
+
+  disegnaGrafico("dashboard-chart-gruppo", {
+    type: "pie",
+    data: {
+      labels: Object.keys(aggregatoGruppo),
+      datasets: [{ data: Object.values(aggregatoGruppo) }],
+    },
+    options: { plugins: { legend: { position: "bottom" } } },
+  });
+}
+
+function aggiornaGraficoTrend() {
+  const aggregatoMensile = {};
+  tutteLeSpeseCache.forEach((spesa) => {
+    const chiaveMese = spesa.data.slice(0, 7);
+    aggregatoMensile[chiaveMese] = (aggregatoMensile[chiaveMese] || 0) + Number(spesa.importo);
+  });
+
+  const mesiOrdinati = Object.keys(aggregatoMensile).sort();
+
+  disegnaGrafico("dashboard-chart-trend", {
+    type: "bar",
+    data: {
+      labels: mesiOrdinati.map(formatMeseLabel),
+      datasets: [{ label: "Totale speso", data: mesiOrdinati.map((m) => aggregatoMensile[m]) }],
+    },
+    options: {
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true } },
+    },
+  });
+}
+
+async function caricaDashboard() {
+  const { data, error } = await db.from("spese").select("*");
+  if (!error) {
+    tutteLeSpeseCache = data || [];
+  }
+  aggiornaDashboardMese();
+  aggiornaGraficoTrend();
+}
+
+function escapeCsvCampo(valore) {
+  const testo = String(valore ?? "");
+  if (/[",;\n]/.test(testo)) {
+    return '"' + testo.replace(/"/g, '""') + '"';
+  }
+  return testo;
+}
+
+function creaRigaCsv(campi) {
+  return campi.map(escapeCsvCampo).join(",");
+}
+
+function esportaCsvMeseSelezionato() {
+  const mese = dashboardMeseFiltro.value;
+  const speseMese = filtraSpesePerMese(mese).sort((a, b) => a.data.localeCompare(b.data));
+
+  const intestazione = ["Data", "Importo", "Voce spesa", "Gruppo spesa", "Metodo pagamento", "Nota"];
+  const righe = speseMese.map((spesa) =>
+    creaRigaCsv([
+      formatDataIt(spesa.data),
+      spesa.importo,
+      spesa.voce_spesa,
+      spesa.gruppo_spesa,
+      spesa.metodo_pagamento,
+      spesa.nota || "",
+    ])
+  );
+
+  const contenutoCsv = [creaRigaCsv(intestazione), ...righe].join("\n");
+  const blob = new Blob(["﻿" + contenutoCsv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `spese_${mese}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+dashboardMeseFiltro.value = meseCorrenteISO();
+dashboardMeseFiltro.addEventListener("change", aggiornaDashboardMese);
+dashboardExportCsvButton.addEventListener("click", esportaCsvMeseSelezionato);
+dashboardTabButton.addEventListener("shown.bs.tab", caricaDashboard);

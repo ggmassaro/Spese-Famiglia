@@ -121,7 +121,53 @@
         </div>
       </div>
       <div class="tab-pane fade" id="dashboard-pane" role="tabpanel" aria-labelledby="dashboard-tab" tabindex="0">
-        <!-- TODO: dashboard con grafici -->
+        <div class="row g-3 align-items-end mt-1">
+          <div class="col-6 col-md-3">
+            <label for="dashboard-mese-filtro" class="form-label">Mese</label>
+            <input type="month" class="form-control" id="dashboard-mese-filtro">
+          </div>
+          <div class="col-6 col-md-3 ms-md-auto text-md-end">
+            <button type="button" id="dashboard-export-csv-button" class="btn btn-outline-primary">Esporta CSV</button>
+          </div>
+        </div>
+
+        <div class="row g-3 mt-1">
+          <div class="col-12 col-md-4">
+            <div class="card h-100">
+              <div class="card-body text-center d-flex flex-column justify-content-center">
+                <div class="text-muted">Totale speso nel mese</div>
+                <div id="dashboard-totale-mese" class="display-5 fw-bold">&euro;0,00</div>
+              </div>
+            </div>
+          </div>
+          <div class="col-12 col-md-4">
+            <div class="card h-100">
+              <div class="card-body">
+                <h6 class="card-title text-center">Per Voce spesa</h6>
+                <canvas id="dashboard-chart-voce"></canvas>
+              </div>
+            </div>
+          </div>
+          <div class="col-12 col-md-4">
+            <div class="card h-100">
+              <div class="card-body">
+                <h6 class="card-title text-center">Per Gruppo spesa</h6>
+                <canvas id="dashboard-chart-gruppo"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row g-3 mt-1 mb-3">
+          <div class="col-12">
+            <div class="card">
+              <div class="card-body">
+                <h6 class="card-title">Andamento mensile</h6>
+                <canvas id="dashboard-chart-trend"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
       <div class="tab-pane fade" id="budget-pane" role="tabpanel" aria-labelledby="budget-tab" tabindex="0">
         <!-- TODO: gestione budget -->
@@ -134,6 +180,9 @@
 
   <!-- Libreria Supabase (CDN) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Libreria Chart.js (CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 
   <!-- Supabase config -->
   <script src="js/supabase-config.js"></script>
