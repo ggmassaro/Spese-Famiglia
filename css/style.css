@@ -288,9 +288,22 @@ label {
   flex: 1;
 }
 
+/* Elenco card mobile "Spese recenti": nascosto di default (desktop) */
+#spese-cards-mobile {
+  display: none;
+}
+
 /* Adattamenti mobile (sotto i 576px) */
 @media (max-width: 576px) {
   .app-title {
     font-size: 1.5rem;
+  }
+
+  #spese-tabella-desktop-container {
+    display: none;
+  }
+
+  #spese-cards-mobile {
+    display: block;
   }
 }
