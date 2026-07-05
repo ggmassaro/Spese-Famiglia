@@ -101,9 +101,19 @@
               <select class="form-select" id="spesa-metodo" required>
                 <option value="Contanti">Contanti</option>
                 <option value="Carta">Carta</option>
+                <option value="Satispay">Satispay</option>
+                <option value="Bonifico">Bonifico</option>
               </select>
             </div>
-            <div class="col-12 col-md-9">
+            <div class="col-6 col-md-3">
+              <label for="spesa-conto" class="form-label">Quale Conto</label>
+              <select class="form-select" id="spesa-conto" required>
+                <option value="Condiviso" selected>Condiviso</option>
+                <option value="Gioele">Gioele</option>
+                <option value="Giovanna">Giovanna</option>
+              </select>
+            </div>
+            <div class="col-12 col-md-6">
               <label for="spesa-nota" class="form-label">Nota</label>
               <input type="text" class="form-control" id="spesa-nota" placeholder="Facoltativa">
             </div>
@@ -127,6 +137,7 @@
                 <th>Voce spesa</th>
                 <th>Gruppo spesa</th>
                 <th>Metodo</th>
+                <th>Conto</th>
                 <th>Nota</th>
                 <th></th>
               </tr>
@@ -148,14 +159,17 @@
         </div>
 
         <div class="row g-3 mt-1">
-          <div class="col-12 col-md-4">
-            <div class="card h-100">
-              <div class="card-body text-center d-flex flex-column justify-content-center">
+          <div class="col-12">
+            <div class="card">
+              <div class="card-body text-center">
                 <div class="text-muted">Totale speso nel mese</div>
                 <div id="dashboard-totale-mese" class="display-5 fw-bold">&euro;0,00</div>
               </div>
             </div>
           </div>
+        </div>
+
+        <div class="row g-3 mt-1">
           <div class="col-12 col-md-4">
             <div class="card h-100">
               <div class="card-body">
@@ -169,6 +183,14 @@
               <div class="card-body">
                 <h6 class="card-title text-center">Per Gruppo spesa</h6>
                 <canvas id="dashboard-chart-gruppo"></canvas>
+              </div>
+            </div>
+          </div>
+          <div class="col-12 col-md-4">
+            <div class="card h-100">
+              <div class="card-body">
+                <h6 class="card-title text-center">Per Conto</h6>
+                <canvas id="dashboard-chart-conto"></canvas>
               </div>
             </div>
           </div>

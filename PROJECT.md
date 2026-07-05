@@ -97,6 +97,31 @@ home) e rifiniture di leggibilità/layout mobile.
 - Raccogliere eventuali problemi o nuove esigenze emerse dall'uso, da affrontare 
   con lo stesso metodo (briefing in chat -> prompt per Claude Code -> test)
 
+Rifiniture aggiuntive completate e testate:
+- Contrasto testo grigio migliorato (label, testo secondario, legende/assi Chart.js)
+- Layout mobile "Spese recenti" a card verticali sotto i 576px (prima gestito da 
+  classi Bootstrap d-none/d-sm-block non funzionanti correttamente, ora media 
+  query esplicita in style.css)
+- Titolo header ridotto su mobile per stare su una riga
+- Placeholder select "Voce/Gruppo spesa" accorciati
+
+Nota tecnica ricorrente: il deploy di GitHub Pages a volte fallisce con 
+"Deployment failed, try again later" (visibile su github.com/[utente]/[repo]/actions, 
+job "deploy" con X rossa). Soluzione rapida: far fare a Claude Code una modifica 
+minima (es. commento vuoto) + nuovo commit/push, che fa ripartire il deploy da 
+zero. In alternativa, "Re-run failed jobs" direttamente su GitHub Actions. 
+Dopo ogni deploy riuscito, ricordarsi che le PWA installate ("Installa" su home 
+screen) cachano in modo più aggressivo del browser normale: se le modifiche non 
+si vedono, rimuovere l'icona dalla home, svuotare cache del browser, verificare 
+le modifiche da browser normale, poi reinstallare l'icona.
+
+Nota tecnica: layout mobile "Spese recenti" (card verticali invece di tabella) 
+confermato funzionante su telefono reale dopo correzione (le regole erano 
+inizialmente gestite da classi utility Bootstrap invece che da una media query 
+dedicata in style.css - risolto centralizzando tutto in un blocco 
+@media (max-width: 576px)). Minore: titolo header ancora su due righe su 
+mobile, non bloccante, da valutare se sistemare.
+
 Nota tecnica emersa durante i test: dopo ogni pubblicazione di modifiche al 
 codice (git push), la cache del browser sul telefono può mostrare temporaneamente 
 la versione precedente. Soluzione: svuotare la cache del browser o aprire in 

@@ -90,6 +90,7 @@ const spesaImportoInput = document.getElementById("spesa-importo");
 const spesaVoceSelect = document.getElementById("spesa-voce");
 const spesaGruppoSelect = document.getElementById("spesa-gruppo");
 const spesaMetodoSelect = document.getElementById("spesa-metodo");
+const spesaContoSelect = document.getElementById("spesa-conto");
 const spesaNotaInput = document.getElementById("spesa-nota");
 const spesaFeedback = document.getElementById("spesa-feedback");
 const spesaSubmitButton = document.getElementById("spesa-submit-button");
@@ -130,13 +131,17 @@ function escapeHtmlAttr(testo) {
 }
 
 const PALETTE_VOCI = [
-  "#2c7ef8", "#38c6f4", "#8f6cff", "#4fd6c8", "#5c8df6",
-  "#29a8e0", "#7aa6ff", "#3ddbd9", "#6f7bf7", "#45b8e8",
+  "#2c7ef8", "#f2b544", "#8f6cff", "#38c6f4", "#ff6b9d",
+  "#4fd6c8", "#7aa6ff", "#ffb347", "#6f7bf7", "#45b8e8",
 ];
 
 function getColoreVoce(nomeVoce) {
   const indice = vociSpesaCache.findIndex((v) => v.nome === nomeVoce);
   return PALETTE_VOCI[(indice === -1 ? 0 : indice) % PALETTE_VOCI.length];
+}
+
+function coloriPerEtichette(etichette) {
+  return etichette.map((_, indice) => PALETTE_VOCI[indice % PALETTE_VOCI.length]);
 }
 
 function mostraFeedbackSpesa(messaggio, tipo) {
@@ -274,6 +279,7 @@ function renderSpeseTable() {
           <td><span class="voce-dot" style="background:${getColoreVoce(spesa.voce_spesa)}"></span>${escapeHtml(spesa.voce_spesa)}</td>
           <td>${escapeHtml(spesa.gruppo_spesa)}</td>
           <td>${escapeHtml(spesa.metodo_pagamento)}</td>
+          <td>${escapeHtml(spesa.conto)}</td>
           <td>${escapeHtml(spesa.nota)}</td>
           <td class="text-nowrap">
             <button type="button" class="btn btn-sm btn-outline-primary btn-modifica-spesa" data-id="${spesa.id}">Modifica</button>
@@ -296,7 +302,7 @@ function renderSpeseTable() {
             <span class="voce-dot" style="background:${getColoreVoce(spesa.voce_spesa)}"></span>${escapeHtml(spesa.voce_spesa)} - ${escapeHtml(spesa.gruppo_spesa)}
           </div>
           <div class="spesa-card-riga">
-            ${escapeHtml(spesa.metodo_pagamento)}${spesa.nota ? ` - ${escapeHtml(spesa.nota)}` : ""}
+            ${escapeHtml(spesa.metodo_pagamento)} &middot; ${escapeHtml(spesa.conto)}${spesa.nota ? ` - ${escapeHtml(spesa.nota)}` : ""}
           </div>
           <div class="spesa-card-azioni">
             <button type="button" class="btn btn-sm btn-outline-primary btn-modifica-spesa" data-id="${spesa.id}">Modifica</button>
@@ -330,6 +336,7 @@ function resetSpesaForm() {
   renderVoceOptions("");
   renderGruppoOptions("");
   spesaMetodoSelect.value = metodoAttuale;
+  spesaContoSelect.value = "Condiviso";
   spesaNotaInput.value = "";
 
   editingSpesaId = null;
@@ -347,6 +354,7 @@ function iniziaModificaSpesa(id) {
   renderVoceOptions(spesa.voce_spesa);
   renderGruppoOptions(spesa.gruppo_spesa);
   spesaMetodoSelect.value = spesa.metodo_pagamento;
+  spesaContoSelect.value = spesa.conto || "Condiviso";
   spesaNotaInput.value = spesa.nota || "";
 
   annullaModificaButton.classList.remove("d-none");
@@ -407,6 +415,7 @@ spesaForm.addEventListener("submit", async (event) => {
     voce_spesa: spesaVoceSelect.value,
     gruppo_spesa: spesaGruppoSelect.value,
     metodo_pagamento: spesaMetodoSelect.value,
+    conto: spesaContoSelect.value,
     nota: spesaNotaInput.value.trim() || null,
   };
 
@@ -460,9 +469,9 @@ function formatMeseLabel(meseISO) {
   return `${NOMI_MESI_IT[parseInt(mese, 10) - 1]} ${anno}`;
 }
 
-function aggregaImportiPerChiave(spese, chiave) {
+function aggregaImportiPerChiave(spese, chiave, etichettaDefault) {
   return spese.reduce((aggregato, spesa) => {
-    const chiaveValore = spesa[chiave];
+    const chiaveValore = spesa[chiave] || etichettaDefault || spesa[chiave];
     aggregato[chiaveValore] = (aggregato[chiaveValore] || 0) + Number(spesa.importo);
     return aggregato;
   }, {});
@@ -490,8 +499,11 @@ function aggiornaDashboardMese() {
 
   const aggregatoVoce = aggregaImportiPerChiave(speseMese, "voce_spesa");
   const aggregatoGruppo = aggregaImportiPerChiave(speseMese, "gruppo_spesa");
+  const aggregatoConto = aggregaImportiPerChiave(speseMese, "conto", "Non specificato");
 
   const etichetteVoce = Object.keys(aggregatoVoce);
+  const etichetteGruppo = Object.keys(aggregatoGruppo);
+  const etichetteConto = Object.keys(aggregatoConto);
 
   disegnaGrafico("dashboard-chart-voce", {
     type: "pie",
@@ -505,8 +517,17 @@ function aggiornaDashboardMese() {
   disegnaGrafico("dashboard-chart-gruppo", {
     type: "pie",
     data: {
-      labels: Object.keys(aggregatoGruppo),
-      datasets: [{ data: Object.values(aggregatoGruppo) }],
+      labels: etichetteGruppo,
+      datasets: [{ data: Object.values(aggregatoGruppo), backgroundColor: coloriPerEtichette(etichetteGruppo) }],
+    },
+    options: { plugins: { legend: { position: "bottom" } } },
+  });
+
+  disegnaGrafico("dashboard-chart-conto", {
+    type: "pie",
+    data: {
+      labels: etichetteConto,
+      datasets: [{ data: Object.values(aggregatoConto), backgroundColor: coloriPerEtichette(etichetteConto) }],
     },
     options: { plugins: { legend: { position: "bottom" } } },
   });
@@ -563,7 +584,7 @@ function esportaCsvMeseSelezionato() {
   const mese = dashboardMeseFiltro.value;
   const speseMese = filtraSpesePerMese(mese).sort((a, b) => a.data.localeCompare(b.data));
 
-  const intestazione = ["Data", "Importo", "Voce spesa", "Gruppo spesa", "Metodo pagamento", "Nota"];
+  const intestazione = ["Data", "Importo", "Voce spesa", "Gruppo spesa", "Metodo pagamento", "Conto", "Nota"];
   const righe = speseMese.map((spesa) =>
     creaRigaCsv([
       formatDataIt(spesa.data),
@@ -571,6 +592,7 @@ function esportaCsvMeseSelezionato() {
       spesa.voce_spesa,
       spesa.gruppo_spesa,
       spesa.metodo_pagamento,
+      spesa.conto || "",
       spesa.nota || "",
     ])
   );
