@@ -97,6 +97,12 @@ const spesaSubmitButton = document.getElementById("spesa-submit-button");
 const annullaModificaButton = document.getElementById("annulla-modifica-button");
 const speseTableBody = document.getElementById("spese-table-body");
 const speseCardsMobile = document.getElementById("spese-cards-mobile");
+const filtroSpeseMese = document.getElementById("filtro-spese-mese");
+const filtroSpeseVoce = document.getElementById("filtro-spese-voce");
+const filtroSpeseGruppo = document.getElementById("filtro-spese-gruppo");
+const filtroSpeseMetodo = document.getElementById("filtro-spese-metodo");
+const filtroSpeseConto = document.getElementById("filtro-spese-conto");
+const filtroSpeseResetButton = document.getElementById("filtro-spese-reset-button");
 
 let vociSpesaCache = [];
 let gruppiSpesaCache = [];
@@ -203,12 +209,29 @@ function renderGruppoOptions(selezionata) {
   ultimoValoreGruppo = spesaGruppoSelect.value;
 }
 
+function renderFiltroVoceOptions() {
+  const valoreAttuale = filtroSpeseVoce.value;
+  filtroSpeseVoce.innerHTML =
+    '<option value="">Tutte</option>' +
+    vociSpesaCache.map((v) => `<option value="${escapeHtmlAttr(v.nome)}">${escapeHtml(v.nome)}</option>`).join("");
+  filtroSpeseVoce.value = valoreAttuale;
+}
+
+function renderFiltroGruppoOptions() {
+  const valoreAttuale = filtroSpeseGruppo.value;
+  filtroSpeseGruppo.innerHTML =
+    '<option value="">Tutti</option>' +
+    gruppiSpesaCache.map((g) => `<option value="${escapeHtmlAttr(g.nome)}">${escapeHtml(g.nome)}</option>`).join("");
+  filtroSpeseGruppo.value = valoreAttuale;
+}
+
 async function caricaVociSpesa(selezionata) {
   const { data, error } = await db.from("voci_spesa").select("*").order("nome");
   if (!error) {
     vociSpesaCache = data || [];
   }
   renderVoceOptions(selezionata);
+  renderFiltroVoceOptions();
 }
 
 async function caricaGruppiSpesa(selezionata) {
@@ -217,6 +240,7 @@ async function caricaGruppiSpesa(selezionata) {
     gruppiSpesaCache = data || [];
   }
   renderGruppoOptions(selezionata);
+  renderFiltroGruppoOptions();
 }
 
 async function gestisciNuovaVoce() {
@@ -314,13 +338,47 @@ function renderSpeseTable() {
     .join("");
 }
 
+function filtriSpeseAttivi() {
+  return {
+    mese: filtroSpeseMese.value,
+    voce: filtroSpeseVoce.value,
+    gruppo: filtroSpeseGruppo.value,
+    metodo: filtroSpeseMetodo.value,
+    conto: filtroSpeseConto.value,
+  };
+}
+
 async function caricaSpeseRecenti() {
-  const { data, error } = await db
-    .from("spese")
-    .select("*")
-    .order("data", { ascending: false })
-    .order("created_at", { ascending: false })
-    .limit(20);
+  const filtri = filtriSpeseAttivi();
+  const almenoUnFiltroAttivo = Object.values(filtri).some((valore) => valore !== "");
+
+  let query = db.from("spese").select("*");
+
+  if (filtri.mese) {
+    const { anno, mese } = parseMeseInput(filtri.mese);
+    const { primoGiorno, ultimoGiorno } = rangeDateMese(anno, mese);
+    query = query.gte("data", primoGiorno).lte("data", ultimoGiorno);
+  }
+  if (filtri.voce) {
+    query = query.eq("voce_spesa", filtri.voce);
+  }
+  if (filtri.gruppo) {
+    query = query.eq("gruppo_spesa", filtri.gruppo);
+  }
+  if (filtri.metodo) {
+    query = query.eq("metodo_pagamento", filtri.metodo);
+  }
+  if (filtri.conto) {
+    query = filtri.conto === "Non specificato" ? query.is("conto", null) : query.eq("conto", filtri.conto);
+  }
+
+  query = query.order("data", { ascending: false }).order("created_at", { ascending: false });
+
+  if (!almenoUnFiltroAttivo) {
+    query = query.limit(20);
+  }
+
+  const { data, error } = await query;
 
   if (!error) {
     speseCache = data || [];
@@ -431,6 +489,21 @@ spesaForm.addEventListener("submit", async (event) => {
   mostraFeedbackSpesa("Spesa salvata correttamente", "success");
   resetSpesaForm();
   await caricaSpeseRecenti();
+});
+
+filtroSpeseMese.addEventListener("change", caricaSpeseRecenti);
+filtroSpeseVoce.addEventListener("change", caricaSpeseRecenti);
+filtroSpeseGruppo.addEventListener("change", caricaSpeseRecenti);
+filtroSpeseMetodo.addEventListener("change", caricaSpeseRecenti);
+filtroSpeseConto.addEventListener("change", caricaSpeseRecenti);
+
+filtroSpeseResetButton.addEventListener("click", () => {
+  filtroSpeseMese.value = "";
+  filtroSpeseVoce.value = "";
+  filtroSpeseGruppo.value = "";
+  filtroSpeseMetodo.value = "";
+  filtroSpeseConto.value = "";
+  caricaSpeseRecenti();
 });
 
 async function caricaDatiInserimentoSpesa() {
@@ -766,6 +839,9 @@ const budgetBozzeContainer = document.getElementById("budget-bozze-container");
 const budgetBozzeList = document.getElementById("budget-bozze-list");
 const budgetSalvaTutteBozzeButton = document.getElementById("budget-salva-tutte-bozze-button");
 const budgetLista = document.getElementById("budget-lista");
+const dettaglioBudgetModal = new bootstrap.Modal(document.getElementById("dettaglio-budget-modal"));
+const dettaglioBudgetTitolo = document.getElementById("dettaglio-budget-titolo");
+const dettaglioBudgetTbody = document.getElementById("dettaglio-budget-tbody");
 
 let budgetDelMeseCache = [];
 let speseDelMeseBudgetCache = [];
@@ -914,13 +990,45 @@ async function eliminaBudget(id) {
   await ricaricaBudgetETotali();
 }
 
-function calcolaActualBudget(budget) {
+function filtraSpesePerBudget(budget) {
   const vociIncluse = new Set(budget.voci_spesa || []);
   const gruppiInclusi = new Set(budget.gruppi_spesa || []);
 
-  return speseDelMeseBudgetCache
-    .filter((spesa) => vociIncluse.has(spesa.voce_spesa) || gruppiInclusi.has(spesa.gruppo_spesa))
-    .reduce((somma, spesa) => somma + Number(spesa.importo), 0);
+  return speseDelMeseBudgetCache.filter(
+    (spesa) => vociIncluse.has(spesa.voce_spesa) || gruppiInclusi.has(spesa.gruppo_spesa)
+  );
+}
+
+function calcolaActualBudget(budget) {
+  return filtraSpesePerBudget(budget).reduce((somma, spesa) => somma + Number(spesa.importo), 0);
+}
+
+function apriDettaglioBudget(id) {
+  const budget = budgetDelMeseCache.find((b) => String(b.id) === String(id));
+  if (!budget) return;
+
+  const speseBudget = filtraSpesePerBudget(budget).sort((a, b) => b.data.localeCompare(a.data));
+
+  dettaglioBudgetTitolo.textContent = budget.nome;
+
+  dettaglioBudgetTbody.innerHTML =
+    speseBudget.length === 0
+      ? '<tr><td colspan="5" class="text-muted">Nessuna spesa per questo budget nel mese selezionato.</td></tr>'
+      : speseBudget
+          .map(
+            (spesa) => `
+              <tr>
+                <td>${formatDataIt(spesa.data)}</td>
+                <td>${formatImporto(spesa.importo)}</td>
+                <td>${escapeHtml(spesa.voce_spesa)}</td>
+                <td>${escapeHtml(spesa.gruppo_spesa)}</td>
+                <td>${escapeHtml(spesa.conto)}</td>
+              </tr>
+            `
+          )
+          .join("");
+
+  dettaglioBudgetModal.show();
 }
 
 function renderBudgetLista() {
@@ -960,7 +1068,7 @@ function renderBudgetLista() {
 
       return `
         <div class="col-12 col-md-6 col-lg-4">
-          <div class="card h-100">
+          <div class="card h-100 budget-card-cliccabile" data-id="${budget.id}">
             <div class="card-body">
               <h6 class="card-title">${escapeHtml(budget.nome)}</h6>
               <div class="mb-2">${badgeVoci}${badgeGruppi}</div>
@@ -1156,6 +1264,12 @@ budgetLista.addEventListener("click", (event) => {
   const bottoneElimina = event.target.closest(".btn-elimina-budget");
   if (bottoneElimina) {
     eliminaBudget(bottoneElimina.dataset.id);
+    return;
+  }
+
+  const card = event.target.closest(".budget-card-cliccabile");
+  if (card) {
+    apriDettaglioBudget(card.dataset.id);
   }
 });
 

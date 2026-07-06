@@ -131,6 +131,47 @@
         </form>
 
         <h5 class="mt-4">Spese recenti</h5>
+        <div class="row g-2 align-items-end mb-3">
+          <div class="col-6 col-md-2">
+            <label for="filtro-spese-mese" class="form-label">Mese</label>
+            <input type="month" class="form-control form-control-sm" id="filtro-spese-mese">
+          </div>
+          <div class="col-6 col-md-2">
+            <label for="filtro-spese-voce" class="form-label">Voce</label>
+            <select class="form-select form-select-sm" id="filtro-spese-voce">
+              <option value="">Tutte</option>
+            </select>
+          </div>
+          <div class="col-6 col-md-2">
+            <label for="filtro-spese-gruppo" class="form-label">Gruppo</label>
+            <select class="form-select form-select-sm" id="filtro-spese-gruppo">
+              <option value="">Tutti</option>
+            </select>
+          </div>
+          <div class="col-6 col-md-2">
+            <label for="filtro-spese-metodo" class="form-label">Metodo</label>
+            <select class="form-select form-select-sm" id="filtro-spese-metodo">
+              <option value="">Tutti</option>
+              <option value="Contanti">Contanti</option>
+              <option value="Carta">Carta</option>
+              <option value="Satispay">Satispay</option>
+              <option value="Bonifico">Bonifico</option>
+            </select>
+          </div>
+          <div class="col-6 col-md-2">
+            <label for="filtro-spese-conto" class="form-label">Conto</label>
+            <select class="form-select form-select-sm" id="filtro-spese-conto">
+              <option value="">Tutti</option>
+              <option value="Condiviso">Condiviso</option>
+              <option value="Gioele">Gioele</option>
+              <option value="Giovanna">Giovanna</option>
+              <option value="Non specificato">Non specificato</option>
+            </select>
+          </div>
+          <div class="col-6 col-md-2">
+            <button type="button" id="filtro-spese-reset-button" class="btn btn-outline-secondary btn-sm w-100">Cancella filtri</button>
+          </div>
+        </div>
         <div id="spese-tabella-desktop-container" class="table-responsive">
           <table class="table table-sm table-striped align-middle">
             <thead>
@@ -297,6 +338,37 @@
                   <button type="button" class="btn btn-outline-primary" id="gestione-gruppo-aggiungi-button">Aggiungi</button>
                 </div>
               </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Chiudi</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modale dettaglio spese di un Budget -->
+    <div class="modal fade" id="dettaglio-budget-modal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="dettaglio-budget-titolo">Budget</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Chiudi"></button>
+          </div>
+          <div class="modal-body">
+            <div class="table-responsive">
+              <table class="table table-sm table-striped align-middle">
+                <thead>
+                  <tr>
+                    <th>Data</th>
+                    <th>Importo</th>
+                    <th>Voce spesa</th>
+                    <th>Gruppo spesa</th>
+                    <th>Conto</th>
+                  </tr>
+                </thead>
+                <tbody id="dettaglio-budget-tbody"></tbody>
+              </table>
             </div>
           </div>
           <div class="modal-footer">

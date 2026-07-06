@@ -110,10 +110,31 @@ Nota tecnica ricorrente: il deploy di GitHub Pages a volte fallisce con
 job "deploy" con X rossa). Soluzione rapida: far fare a Claude Code una modifica 
 minima (es. commento vuoto) + nuovo commit/push, che fa ripartire il deploy da 
 zero. In alternativa, "Re-run failed jobs" direttamente su GitHub Actions. 
+A volte un run resta bloccato su "Queued" per diversi minuti: in quel caso, 
+un nuovo commit/push crea comunque un nuovo tentativo indipendente che di 
+solito procede normalmente.
 Dopo ogni deploy riuscito, ricordarsi che le PWA installate ("Installa" su home 
 screen) cachano in modo più aggressivo del browser normale: se le modifiche non 
 si vedono, rimuovere l'icona dalla home, svuotare cache del browser, verificare 
 le modifiche da browser normale, poi reinstallare l'icona.
+
+Ulteriori evoluzioni completate e testate:
+- Metodi di pagamento estesi: Contanti, Carta, Satispay, Bonifico
+- Nuovo campo "Conto" su ogni spesa (Condiviso/Gioele/Giovanna), colonna 
+  facoltativa su Supabase per non rompere le spese esistenti (rimaste senza 
+  valore, da sistemare manualmente se necessario)
+- Palette colori grafici resa più contrastata (alternanza toni caldi/freddi)
+- Nuovo grafico "Per Conto" in Dashboard
+- Fix bug: selezione Voci/Gruppi nel form Budget si azzerava durante la 
+  compilazione; risolto sostituendo il <select multiple> nativo con una lista 
+  di checkbox (più chiara e usabile anche su mobile)
+- Aggiunta gestione/cancellazione di Voci spesa e Gruppi spesa (pulsante 
+  "Gestisci voci/gruppi")
+
+In sospeso: 
+- Conferma se il campo "Conto" debba avere "Condiviso" preselezionato di default
+- Correzione visualizzazione su iPhone (in attesa di screenshot per capire il 
+  problema specifico)
 
 Nota tecnica: layout mobile "Spese recenti" (card verticali invece di tabella) 
 confermato funzionante su telefono reale dopo correzione (le regole erano 

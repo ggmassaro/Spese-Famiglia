@@ -243,6 +243,16 @@ label {
   color: var(--status-over-text);
 }
 
+/* Card Budget cliccabile per aprire il dettaglio spese */
+.budget-card-cliccabile {
+  cursor: pointer;
+  transition: filter 0.15s ease;
+}
+
+.budget-card-cliccabile:hover {
+  filter: brightness(1.1);
+}
+
 /* Pallino colorato per Voce spesa */
 .voce-dot {
   display: inline-block;
