@@ -440,6 +440,135 @@ async function caricaDatiInserimentoSpesa() {
 }
 
 // ---------------------------------------------------------------------------
+// Gestione Voci/Gruppi spesa (modale)
+// ---------------------------------------------------------------------------
+
+const gestisciVociGruppiButton = document.getElementById("gestisci-voci-gruppi-button");
+const gestisciVociGruppiModal = new bootstrap.Modal(document.getElementById("gestisci-voci-gruppi-modal"));
+const gestioneVociLista = document.getElementById("gestione-voci-lista");
+const gestioneGruppiLista = document.getElementById("gestione-gruppi-lista");
+const gestioneVoceNuovaInput = document.getElementById("gestione-voce-nuova-input");
+const gestioneVoceAggiungiButton = document.getElementById("gestione-voce-aggiungi-button");
+const gestioneGruppoNuovoInput = document.getElementById("gestione-gruppo-nuovo-input");
+const gestioneGruppoAggiungiButton = document.getElementById("gestione-gruppo-aggiungi-button");
+
+function renderGestioneListe() {
+  gestioneVociLista.innerHTML = vociSpesaCache
+    .map(
+      (voce) => `
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          ${escapeHtml(voce.nome)}
+          <button type="button" class="btn btn-sm btn-outline-danger gestione-elimina-voce" data-id="${voce.id}" data-nome="${escapeHtmlAttr(voce.nome)}">&times;</button>
+        </li>
+      `
+    )
+    .join("");
+
+  gestioneGruppiLista.innerHTML = gruppiSpesaCache
+    .map(
+      (gruppo) => `
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          ${escapeHtml(gruppo.nome)}
+          <button type="button" class="btn btn-sm btn-outline-danger gestione-elimina-gruppo" data-id="${gruppo.id}" data-nome="${escapeHtmlAttr(gruppo.nome)}">&times;</button>
+        </li>
+      `
+    )
+    .join("");
+}
+
+async function eliminaVoceGestione(id, nome) {
+  if (!window.confirm(`Eliminare la voce "${nome}"?`)) return;
+
+  const { error } = await db.from("voci_spesa").delete().eq("id", id);
+  if (error) {
+    window.alert("Errore durante l'eliminazione: " + error.message);
+    return;
+  }
+
+  await caricaVociSpesa(spesaVoceSelect.value);
+  renderGestioneListe();
+}
+
+async function eliminaGruppoGestione(id, nome) {
+  if (!window.confirm(`Eliminare il gruppo "${nome}"?`)) return;
+
+  const { error } = await db.from("gruppi_spesa").delete().eq("id", id);
+  if (error) {
+    window.alert("Errore durante l'eliminazione: " + error.message);
+    return;
+  }
+
+  await caricaGruppiSpesa(spesaGruppoSelect.value);
+  renderGestioneListe();
+}
+
+async function aggiungiVoceGestione() {
+  const nome = gestioneVoceNuovaInput.value.trim();
+  if (!nome) return;
+
+  const { error } = await db.from("voci_spesa").insert({ nome });
+  if (error) {
+    window.alert("Errore nella creazione della voce: " + error.message);
+    return;
+  }
+
+  gestioneVoceNuovaInput.value = "";
+  await caricaVociSpesa(spesaVoceSelect.value);
+  renderGestioneListe();
+}
+
+async function aggiungiGruppoGestione() {
+  const nome = gestioneGruppoNuovoInput.value.trim();
+  if (!nome) return;
+
+  const { error } = await db.from("gruppi_spesa").insert({ nome });
+  if (error) {
+    window.alert("Errore nella creazione del gruppo: " + error.message);
+    return;
+  }
+
+  gestioneGruppoNuovoInput.value = "";
+  await caricaGruppiSpesa(spesaGruppoSelect.value);
+  renderGestioneListe();
+}
+
+gestisciVociGruppiButton.addEventListener("click", () => {
+  renderGestioneListe();
+  gestisciVociGruppiModal.show();
+});
+
+gestioneVociLista.addEventListener("click", (event) => {
+  const bottone = event.target.closest(".gestione-elimina-voce");
+  if (bottone) {
+    eliminaVoceGestione(bottone.dataset.id, bottone.dataset.nome);
+  }
+});
+
+gestioneGruppiLista.addEventListener("click", (event) => {
+  const bottone = event.target.closest(".gestione-elimina-gruppo");
+  if (bottone) {
+    eliminaGruppoGestione(bottone.dataset.id, bottone.dataset.nome);
+  }
+});
+
+gestioneVoceAggiungiButton.addEventListener("click", aggiungiVoceGestione);
+gestioneGruppoAggiungiButton.addEventListener("click", aggiungiGruppoGestione);
+
+gestioneVoceNuovaInput.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    aggiungiVoceGestione();
+  }
+});
+
+gestioneGruppoNuovoInput.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    aggiungiGruppoGestione();
+  }
+});
+
+// ---------------------------------------------------------------------------
 // Sezione "Dashboard"
 // ---------------------------------------------------------------------------
 
@@ -627,8 +756,8 @@ const budgetNuovoButton = document.getElementById("budget-nuovo-button");
 const budgetFormContainer = document.getElementById("budget-form-container");
 const budgetForm = document.getElementById("budget-form");
 const budgetNomeInput = document.getElementById("budget-nome");
-const budgetVociSelect = document.getElementById("budget-voci");
-const budgetGruppiSelect = document.getElementById("budget-gruppi");
+const budgetVociChecklist = document.getElementById("budget-voci-checklist");
+const budgetGruppiChecklist = document.getElementById("budget-gruppi-checklist");
 const budgetImportoInput = document.getElementById("budget-importo");
 const budgetFeedback = document.getElementById("budget-feedback");
 const budgetSubmitButton = document.getElementById("budget-submit-button");
@@ -681,27 +810,33 @@ async function caricaBudgetDelMese(anno, mese) {
   return error ? [] : data || [];
 }
 
+function renderChecklist(container, elementi, prefissoId) {
+  const selezionatiPrecedenti = new Set(
+    Array.from(container.querySelectorAll("input:checked")).map((cb) => cb.value)
+  );
+
+  container.innerHTML = elementi
+    .map((elemento, indice) => {
+      const id = `${prefissoId}-${indice}`;
+      const selezionato = selezionatiPrecedenti.has(elemento.nome) ? "checked" : "";
+      return `
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" value="${escapeHtmlAttr(elemento.nome)}" id="${id}" ${selezionato}>
+          <label class="form-check-label" for="${id}">${escapeHtml(elemento.nome)}</label>
+        </div>
+      `;
+    })
+    .join("");
+}
+
 async function caricaVociGruppiBudgetSelect() {
   const [{ data: voci }, { data: gruppi }] = await Promise.all([
     db.from("voci_spesa").select("*").order("nome"),
     db.from("gruppi_spesa").select("*").order("nome"),
   ]);
 
-  budgetVociSelect.innerHTML = "";
-  (voci || []).forEach((voce) => {
-    const opt = document.createElement("option");
-    opt.value = voce.nome;
-    opt.textContent = voce.nome;
-    budgetVociSelect.appendChild(opt);
-  });
-
-  budgetGruppiSelect.innerHTML = "";
-  (gruppi || []).forEach((gruppo) => {
-    const opt = document.createElement("option");
-    opt.value = gruppo.nome;
-    opt.textContent = gruppo.nome;
-    budgetGruppiSelect.appendChild(opt);
-  });
+  renderChecklist(budgetVociChecklist, voci || [], "budget-voce-check");
+  renderChecklist(budgetGruppiChecklist, gruppi || [], "budget-gruppo-check");
 }
 
 function mostraFeedbackBudget(messaggio, tipo) {
@@ -735,8 +870,8 @@ function chiudiFormBudget() {
 
 function resetBudgetForm() {
   budgetNomeInput.value = "";
-  Array.from(budgetVociSelect.options).forEach((opt) => (opt.selected = false));
-  Array.from(budgetGruppiSelect.options).forEach((opt) => (opt.selected = false));
+  budgetVociChecklist.querySelectorAll("input").forEach((cb) => (cb.checked = false));
+  budgetGruppiChecklist.querySelectorAll("input").forEach((cb) => (cb.checked = false));
   budgetImportoInput.value = "";
 
   editingBudgetId = null;
@@ -749,11 +884,11 @@ function iniziaModificaBudget(id) {
 
   editingBudgetId = budget.id;
   budgetNomeInput.value = budget.nome;
-  Array.from(budgetVociSelect.options).forEach((opt) => {
-    opt.selected = (budget.voci_spesa || []).includes(opt.value);
+  budgetVociChecklist.querySelectorAll("input").forEach((cb) => {
+    cb.checked = (budget.voci_spesa || []).includes(cb.value);
   });
-  Array.from(budgetGruppiSelect.options).forEach((opt) => {
-    opt.selected = (budget.gruppi_spesa || []).includes(opt.value);
+  budgetGruppiChecklist.querySelectorAll("input").forEach((cb) => {
+    cb.checked = (budget.gruppi_spesa || []).includes(cb.value);
   });
   budgetImportoInput.value = budget.importo_mensile;
 
@@ -1046,8 +1181,8 @@ budgetForm.addEventListener("submit", async (event) => {
     return;
   }
 
-  const vociSelezionate = Array.from(budgetVociSelect.selectedOptions).map((opt) => opt.value);
-  const gruppiSelezionati = Array.from(budgetGruppiSelect.selectedOptions).map((opt) => opt.value);
+  const vociSelezionate = Array.from(budgetVociChecklist.querySelectorAll("input:checked")).map((cb) => cb.value);
+  const gruppiSelezionati = Array.from(budgetGruppiChecklist.querySelectorAll("input:checked")).map((cb) => cb.value);
 
   if (vociSelezionate.length === 0 && gruppiSelezionati.length === 0) {
     mostraFeedbackBudget("Seleziona almeno una Voce spesa o un Gruppo spesa incluso", "danger");
