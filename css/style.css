@@ -74,6 +74,15 @@ label {
   color: var(--text-primary);
 }
 
+/* Evidenzia le opzioni selezionate nei select multipli anche quando il campo
+   perde il focus (senza questa regola il browser usa un grigio molto tenue,
+   quasi invisibile sullo sfondo scuro, dando l'impressione che la selezione
+   sia stata azzerata). */
+.form-select[multiple] option:checked {
+  background-color: #7b5cff;
+  color: #ffffff;
+}
+
 .input-group-text {
   background: var(--bg-card-alt);
   border: 1px solid var(--border-subtle);
