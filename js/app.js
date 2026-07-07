@@ -273,14 +273,16 @@ async function gestisciNuovoGruppo() {
     return;
   }
 
-  const { error } = await db.from("gruppi_spesa").insert({ nome: nome.trim() });
+  const nomeTrim = nome.trim();
+  const { error } = await db.from("gruppi_spesa").insert({ nome: nomeTrim });
   if (error) {
     mostraFeedbackSpesa("Errore nella creazione del gruppo: " + error.message, "danger");
     spesaGruppoSelect.value = ultimoValoreGruppo;
     return;
   }
 
-  await caricaGruppiSpesa(nome.trim());
+  await caricaGruppiSpesa(nomeTrim);
+  await creaBudgetAutomaticoPerNuovoGruppo(nomeTrim);
 }
 
 spesaVoceSelect.addEventListener("change", () => {
@@ -672,6 +674,7 @@ async function aggiungiGruppoGestione() {
   gestioneGruppoNuovoInput.value = "";
   await caricaGruppiSpesa(spesaGruppoSelect.value);
   renderGestioneListe();
+  await creaBudgetAutomaticoPerNuovoGruppo(nome);
 }
 
 gestisciVociGruppiButton.addEventListener("click", () => {
@@ -911,6 +914,9 @@ const budgetLista = document.getElementById("budget-lista");
 const dettaglioBudgetModal = new bootstrap.Modal(document.getElementById("dettaglio-budget-modal"));
 const dettaglioBudgetTitolo = document.getElementById("dettaglio-budget-titolo");
 const dettaglioBudgetTbody = document.getElementById("dettaglio-budget-tbody");
+const budgetNonCoperteBanner = document.getElementById("budget-non-coperte-banner");
+const budgetNonCoperteTesto = document.getElementById("budget-non-coperte-testo");
+const budgetNonCoperteVediButton = document.getElementById("budget-non-coperte-vedi-button");
 
 let budgetDelMeseCache = [];
 let speseDelMeseBudgetCache = [];
@@ -982,6 +988,30 @@ async function caricaVociGruppiBudgetSelect() {
 
   renderChecklist(budgetVociChecklist, voci || [], "budget-voce-check");
   renderChecklist(budgetGruppiChecklist, gruppi || [], "budget-gruppo-check");
+}
+
+async function creaBudgetAutomaticoPerNuovoGruppo(nomeGruppo) {
+  const rispostaImporto = window.prompt(`Imposta il budget mensile per "${nomeGruppo}" (€):`);
+  const importoParsed = parseFloat(rispostaImporto);
+  const importoMensile = rispostaImporto !== null && !isNaN(importoParsed) && importoParsed >= 0 ? importoParsed : 0;
+
+  const { anno, mese } = parseMeseInput(budgetMeseInput.value || meseCorrenteISO());
+
+  const { error } = await db.from("budget").insert({
+    nome: nomeGruppo,
+    voci_spesa: [],
+    gruppi_spesa: [nomeGruppo],
+    importo_mensile: importoMensile,
+    mese,
+    anno,
+  });
+
+  if (error) {
+    window.alert("Errore nella creazione automatica del budget: " + error.message);
+    return;
+  }
+
+  await ricaricaBudgetETotali();
 }
 
 function mostraFeedbackBudget(messaggio, tipo) {
@@ -1072,33 +1102,66 @@ function calcolaActualBudget(budget) {
   return filtraSpesePerBudget(budget).reduce((somma, spesa) => somma + Number(spesa.importo), 0);
 }
 
+function renderRigheSpeseDettaglio(spese, messaggioVuoto) {
+  if (spese.length === 0) {
+    return `<tr><td colspan="5" class="text-muted">${messaggioVuoto}</td></tr>`;
+  }
+
+  return spese
+    .map(
+      (spesa) => `
+        <tr>
+          <td>${formatDataIt(spesa.data)}</td>
+          <td>${formatImporto(spesa.importo)}</td>
+          <td>${escapeHtml(spesa.voce_spesa)}</td>
+          <td>${escapeHtml(spesa.gruppo_spesa)}</td>
+          <td>${escapeHtml(spesa.conto)}</td>
+        </tr>
+      `
+    )
+    .join("");
+}
+
+function apriDettaglioSpeseModale(titolo, spese, messaggioVuoto) {
+  dettaglioBudgetTitolo.textContent = titolo;
+  dettaglioBudgetTbody.innerHTML = renderRigheSpeseDettaglio(spese, messaggioVuoto);
+  dettaglioBudgetModal.show();
+}
+
 function apriDettaglioBudget(id) {
   const budget = budgetDelMeseCache.find((b) => String(b.id) === String(id));
   if (!budget) return;
 
   const speseBudget = filtraSpesePerBudget(budget).sort((a, b) => b.data.localeCompare(a.data));
-
-  dettaglioBudgetTitolo.textContent = budget.nome;
-
-  dettaglioBudgetTbody.innerHTML =
-    speseBudget.length === 0
-      ? '<tr><td colspan="5" class="text-muted">Nessuna spesa per questo budget nel mese selezionato.</td></tr>'
-      : speseBudget
-          .map(
-            (spesa) => `
-              <tr>
-                <td>${formatDataIt(spesa.data)}</td>
-                <td>${formatImporto(spesa.importo)}</td>
-                <td>${escapeHtml(spesa.voce_spesa)}</td>
-                <td>${escapeHtml(spesa.gruppo_spesa)}</td>
-                <td>${escapeHtml(spesa.conto)}</td>
-              </tr>
-            `
-          )
-          .join("");
-
-  dettaglioBudgetModal.show();
+  apriDettaglioSpeseModale(budget.nome, speseBudget, "Nessuna spesa per questo budget nel mese selezionato.");
 }
+
+function budgetCoprelaSpesa(budget, spesa) {
+  return (budget.voci_spesa || []).includes(spesa.voce_spesa) || (budget.gruppi_spesa || []).includes(spesa.gruppo_spesa);
+}
+
+function speseNonCoperteDaAlcunBudget() {
+  return speseDelMeseBudgetCache.filter(
+    (spesa) => !budgetDelMeseCache.some((budget) => budgetCoprelaSpesa(budget, spesa))
+  );
+}
+
+function aggiornaBannerSpeseNonCoperte() {
+  const nonCoperte = speseNonCoperteDaAlcunBudget();
+
+  if (nonCoperte.length === 0) {
+    budgetNonCoperteBanner.classList.add("d-none");
+    return;
+  }
+
+  budgetNonCoperteTesto.textContent = `Attenzione: ${nonCoperte.length} spese di questo mese non rientrano in nessun budget`;
+  budgetNonCoperteBanner.classList.remove("d-none");
+}
+
+budgetNonCoperteVediButton.addEventListener("click", () => {
+  const nonCoperte = speseNonCoperteDaAlcunBudget().sort((a, b) => b.data.localeCompare(a.data));
+  apriDettaglioSpeseModale("Spese non coperte da nessun budget", nonCoperte, "Nessuna spesa non coperta.");
+});
 
 function renderBudgetLista() {
   if (budgetDelMeseCache.length === 0) {
@@ -1217,6 +1280,7 @@ async function ricaricaBudgetETotali() {
   budgetDelMeseCache = budgets;
   speseDelMeseBudgetCache = spese;
   renderBudgetLista();
+  aggiornaBannerSpeseNonCoperte();
   nascondiBannerImportBudget();
 }
 
@@ -1235,6 +1299,7 @@ async function inizializzaBudgetTab() {
   budgetDelMeseCache = budgets;
   speseDelMeseBudgetCache = spese;
   renderBudgetLista();
+  aggiornaBannerSpeseNonCoperte();
 
   if (budgetDelMeseCache.length === 0) {
     const precedente = mesePrecedente(anno, mese);
