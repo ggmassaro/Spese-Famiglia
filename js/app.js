@@ -128,8 +128,8 @@ function formatDataIt(dataISO) {
   return `${giorno}/${mese}/${anno}`;
 }
 
-function formatImporto(valore) {
-  return new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(valore);
+function formatEuro(valore) {
+  return Number(valore).toLocaleString("it-IT", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
 }
 
 function escapeHtml(testo) {
@@ -307,7 +307,7 @@ function renderSpeseTable() {
       (spesa) => `
         <tr>
           <td>${formatDataIt(spesa.data)}</td>
-          <td>${formatImporto(spesa.importo)}</td>
+          <td>${formatEuro(spesa.importo)}</td>
           <td><span class="voce-dot" style="background:${getColoreVoce(spesa.voce_spesa)}"></span>${escapeHtml(spesa.voce_spesa)}</td>
           <td>${escapeHtml(spesa.gruppo_spesa)}</td>
           <td>${escapeHtml(spesa.metodo_pagamento)}</td>
@@ -328,7 +328,7 @@ function renderSpeseTable() {
         <div class="spesa-card-mobile">
           <div class="spesa-card-riga-alto">
             <span>${formatDataIt(spesa.data)}</span>
-            <span class="spesa-card-importo">${formatImporto(spesa.importo)}</span>
+            <span class="spesa-card-importo">${formatEuro(spesa.importo)}</span>
           </div>
           <div class="spesa-card-riga">
             <span class="voce-dot" style="background:${getColoreVoce(spesa.voce_spesa)}"></span>${escapeHtml(spesa.voce_spesa)} - ${escapeHtml(spesa.gruppo_spesa)}
@@ -769,7 +769,7 @@ function aggiornaDashboardMese() {
 
   const speseMese = filtraSpesePerMese(mese);
   const totale = speseMese.reduce((somma, spesa) => somma + Number(spesa.importo), 0);
-  dashboardTotaleMeseEl.textContent = formatImporto(totale);
+  dashboardTotaleMeseEl.textContent = formatEuro(totale);
 
   const aggregatoVoce = aggregaImportiPerChiave(speseMese, "voce_spesa");
   const aggregatoGruppo = aggregaImportiPerChiave(speseMese, "gruppo_spesa");
@@ -1116,7 +1116,7 @@ function renderRigheSpeseDettaglio(spese, messaggioVuoto) {
       (spesa) => `
         <tr>
           <td>${formatDataIt(spesa.data)}</td>
-          <td>${formatImporto(spesa.importo)}</td>
+          <td>${formatEuro(spesa.importo)}</td>
           <td>${escapeHtml(spesa.voce_spesa)}</td>
           <td>${escapeHtml(spesa.gruppo_spesa)}</td>
           <td>${escapeHtml(spesa.conto)}</td>
@@ -1190,15 +1190,15 @@ function aggiornaRiepilogoTotaleBudget() {
 
   const rimanenti = totaleBudget - totaleSpeso;
   const statoTesto = percentuale > 100
-    ? `Sforato di ${formatImporto(Math.abs(rimanenti))}`
-    : `Rimangono ${formatImporto(rimanenti)}`;
+    ? `Sforato di ${formatEuro(Math.abs(rimanenti))}`
+    : `Rimangono ${formatEuro(rimanenti)}`;
 
   budgetTotaleRiepilogo.classList.remove("d-none");
   budgetTotaleProgressBar.className = `progress-bar ${coloreBarra}`;
   budgetTotaleProgressBar.style.width = `${percentualeBarra}%`;
   budgetTotaleStatus.className = `status-pill ${statoClasse}`;
   budgetTotaleStatus.textContent = statoTesto;
-  budgetTotaleTesto.textContent = `Speso ${formatImporto(totaleSpeso)} di ${formatImporto(totaleBudget)}`;
+  budgetTotaleTesto.textContent = `Speso ${formatEuro(totaleSpeso)} di ${formatEuro(totaleBudget)}`;
 }
 
 function renderBudgetLista() {
@@ -1226,8 +1226,8 @@ function renderBudgetLista() {
 
       const rimanenti = importo - actual;
       const statoTesto = percentuale > 100
-        ? `Sforato di ${formatImporto(Math.abs(rimanenti))}`
-        : `Rimangono ${formatImporto(rimanenti)}`;
+        ? `Sforato di ${formatEuro(Math.abs(rimanenti))}`
+        : `Rimangono ${formatEuro(rimanenti)}`;
 
       const badgeVoci = (budget.voci_spesa || [])
         .map((v) => `<span class="badge text-bg-secondary me-1">${escapeHtml(v)}</span>`)
@@ -1245,7 +1245,7 @@ function renderBudgetLista() {
               <div class="progress mb-2" role="progressbar" aria-valuenow="${percentualeBarra}" aria-valuemin="0" aria-valuemax="100">
                 <div class="progress-bar ${coloreBarra}" style="width: ${percentualeBarra}%"></div>
               </div>
-              <div class="small mb-2">Speso ${formatImporto(actual)} di ${formatImporto(importo)}</div>
+              <div class="small mb-2">Speso ${formatEuro(actual)} di ${formatEuro(importo)}</div>
               <div class="mb-3"><span class="status-pill ${statoClasse}">${statoTesto}</span></div>
               <div class="d-flex gap-2">
                 <button type="button" class="btn btn-sm btn-outline-primary btn-modifica-budget" data-id="${budget.id}">Modifica</button>
