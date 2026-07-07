@@ -84,6 +84,8 @@ const NUOVA_VOCE_TESTO = "+ Aggiungi nuova voce...";
 const NUOVO_GRUPPO_VALORE = "__nuovo_gruppo__";
 const NUOVO_GRUPPO_TESTO = "+ Aggiungi nuovo gruppo...";
 
+const spesaNuovaButton = document.getElementById("spesa-nuova-button");
+const spesaFormContainer = document.getElementById("spesa-form-container");
 const spesaForm = document.getElementById("spesa-form");
 const spesaDataInput = document.getElementById("spesa-data");
 const spesaImportoInput = document.getElementById("spesa-importo");
@@ -103,6 +105,10 @@ const filtroSpeseGruppo = document.getElementById("filtro-spese-gruppo");
 const filtroSpeseMetodo = document.getElementById("filtro-spese-metodo");
 const filtroSpeseConto = document.getElementById("filtro-spese-conto");
 const filtroSpeseResetButton = document.getElementById("filtro-spese-reset-button");
+const filtroSpeseToggleButton = document.getElementById("filtro-spese-toggle-button");
+const filtroSpeseContainer = document.getElementById("filtro-spese-container");
+
+const CHIAVE_FILTRI_SPESE_LOCALSTORAGE = "filtriSpese";
 
 let vociSpesaCache = [];
 let gruppiSpesaCache = [];
@@ -386,6 +392,16 @@ async function caricaSpeseRecenti() {
   }
 }
 
+function apriFormSpesa() {
+  spesaFormContainer.classList.remove("d-none");
+  spesaNuovaButton.classList.add("d-none");
+}
+
+function chiudiFormSpesa() {
+  spesaFormContainer.classList.add("d-none");
+  spesaNuovaButton.classList.remove("d-none");
+}
+
 function resetSpesaForm() {
   const metodoAttuale = spesaMetodoSelect.value;
 
@@ -398,7 +414,6 @@ function resetSpesaForm() {
   spesaNotaInput.value = "";
 
   editingSpesaId = null;
-  annullaModificaButton.classList.add("d-none");
   spesaSubmitButton.textContent = "Salva spesa";
 }
 
@@ -415,9 +430,9 @@ function iniziaModificaSpesa(id) {
   spesaContoSelect.value = spesa.conto || "Condiviso";
   spesaNotaInput.value = spesa.nota || "";
 
-  annullaModificaButton.classList.remove("d-none");
   spesaSubmitButton.textContent = "Aggiorna spesa";
   nascondiFeedbackSpesa();
+  apriFormSpesa();
 }
 
 async function eliminaSpesa(id) {
@@ -453,9 +468,16 @@ function gestisciClickAzioniSpesa(event) {
 speseTableBody.addEventListener("click", gestisciClickAzioniSpesa);
 speseCardsMobile.addEventListener("click", gestisciClickAzioniSpesa);
 
+spesaNuovaButton.addEventListener("click", () => {
+  resetSpesaForm();
+  nascondiFeedbackSpesa();
+  apriFormSpesa();
+});
+
 annullaModificaButton.addEventListener("click", () => {
   resetSpesaForm();
   nascondiFeedbackSpesa();
+  chiudiFormSpesa();
 });
 
 spesaForm.addEventListener("submit", async (event) => {
@@ -491,11 +513,48 @@ spesaForm.addEventListener("submit", async (event) => {
   await caricaSpeseRecenti();
 });
 
-filtroSpeseMese.addEventListener("change", caricaSpeseRecenti);
-filtroSpeseVoce.addEventListener("change", caricaSpeseRecenti);
-filtroSpeseGruppo.addEventListener("change", caricaSpeseRecenti);
-filtroSpeseMetodo.addEventListener("change", caricaSpeseRecenti);
-filtroSpeseConto.addEventListener("change", caricaSpeseRecenti);
+function apriFiltriSpese() {
+  filtroSpeseContainer.classList.remove("d-none");
+}
+
+function chiudiFiltriSpese() {
+  filtroSpeseContainer.classList.add("d-none");
+}
+
+function salvaFiltriSpese() {
+  localStorage.setItem(CHIAVE_FILTRI_SPESE_LOCALSTORAGE, JSON.stringify(filtriSpeseAttivi()));
+}
+
+function ripristinaFiltriSpese() {
+  let filtriSalvati = {};
+  try {
+    filtriSalvati = JSON.parse(localStorage.getItem(CHIAVE_FILTRI_SPESE_LOCALSTORAGE) || "{}");
+  } catch {
+    filtriSalvati = {};
+  }
+
+  filtroSpeseMese.value = filtriSalvati.mese || "";
+  filtroSpeseVoce.value = filtriSalvati.voce || "";
+  filtroSpeseGruppo.value = filtriSalvati.gruppo || "";
+  filtroSpeseMetodo.value = filtriSalvati.metodo || "";
+  filtroSpeseConto.value = filtriSalvati.conto || "";
+
+  const almenoUnFiltroAttivo = Object.values(filtriSpeseAttivi()).some((valore) => valore !== "");
+  if (almenoUnFiltroAttivo) {
+    apriFiltriSpese();
+  }
+}
+
+function gestisciCambioFiltroSpese() {
+  salvaFiltriSpese();
+  caricaSpeseRecenti();
+}
+
+filtroSpeseMese.addEventListener("change", gestisciCambioFiltroSpese);
+filtroSpeseVoce.addEventListener("change", gestisciCambioFiltroSpese);
+filtroSpeseGruppo.addEventListener("change", gestisciCambioFiltroSpese);
+filtroSpeseMetodo.addEventListener("change", gestisciCambioFiltroSpese);
+filtroSpeseConto.addEventListener("change", gestisciCambioFiltroSpese);
 
 filtroSpeseResetButton.addEventListener("click", () => {
   filtroSpeseMese.value = "";
@@ -503,12 +562,22 @@ filtroSpeseResetButton.addEventListener("click", () => {
   filtroSpeseGruppo.value = "";
   filtroSpeseMetodo.value = "";
   filtroSpeseConto.value = "";
+  salvaFiltriSpese();
   caricaSpeseRecenti();
+});
+
+filtroSpeseToggleButton.addEventListener("click", () => {
+  if (filtroSpeseContainer.classList.contains("d-none")) {
+    apriFiltriSpese();
+  } else {
+    chiudiFiltriSpese();
+  }
 });
 
 async function caricaDatiInserimentoSpesa() {
   spesaDataInput.value = spesaDataInput.value || dataOdiernaISO();
   await Promise.all([caricaVociSpesa(), caricaGruppiSpesa()]);
+  ripristinaFiltriSpese();
   await caricaSpeseRecenti();
 }
 

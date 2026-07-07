@@ -159,6 +159,7 @@ label {
 #login-button,
 #spesa-submit-button,
 #budget-submit-button,
+#spesa-nuova-button,
 #budget-nuovo-button {
   background: var(--gradient-warm);
   border: none;
@@ -170,6 +171,7 @@ label {
 #login-button:hover,
 #spesa-submit-button:hover,
 #budget-submit-button:hover,
+#spesa-nuova-button:hover,
 #budget-nuovo-button:hover {
   color: #ffffff;
   opacity: 0.92;
