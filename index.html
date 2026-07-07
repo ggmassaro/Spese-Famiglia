@@ -78,128 +78,136 @@
     <!-- Contenuto tab -->
     <div class="tab-content border border-top-0 p-3" id="mainTabContent">
       <div class="tab-pane fade show active" id="inserisci-pane" role="tabpanel" aria-labelledby="inserisci-tab" tabindex="0">
-        <div class="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
-          <button type="button" id="spesa-nuova-button" class="btn btn-outline-primary">+ Nuova Spesa</button>
-          <button type="button" id="gestisci-voci-gruppi-button" class="btn btn-outline-secondary btn-sm">Gestisci voci/gruppi</button>
-        </div>
-
-        <div id="spesa-form-container" class="d-none mt-3">
-          <form id="spesa-form" novalidate>
-            <div class="row g-3">
-              <div class="col-6 col-md-3">
-                <label for="spesa-data" class="form-label">Data</label>
-                <input type="date" class="form-control" id="spesa-data" required>
-              </div>
-              <div class="col-6 col-md-3">
-                <label for="spesa-importo" class="form-label">Importo (&euro;)</label>
-                <input type="number" class="form-control" id="spesa-importo" step="0.01" min="0" required>
-              </div>
-              <div class="col-6 col-md-3">
-                <label for="spesa-voce" class="form-label">Voce spesa</label>
-                <select class="form-select" id="spesa-voce" required></select>
-              </div>
-              <div class="col-6 col-md-3">
-                <label for="spesa-gruppo" class="form-label">Gruppo spesa</label>
-                <select class="form-select" id="spesa-gruppo" required></select>
-              </div>
-              <div class="col-6 col-md-3">
-                <label for="spesa-metodo" class="form-label">Metodo pagamento</label>
-                <select class="form-select" id="spesa-metodo" required>
-                  <option value="Contanti">Contanti</option>
-                  <option value="Carta">Carta</option>
-                  <option value="Satispay">Satispay</option>
-                  <option value="Bonifico">Bonifico</option>
-                </select>
-              </div>
-              <div class="col-6 col-md-3">
-                <label for="spesa-conto" class="form-label">Quale Conto</label>
-                <select class="form-select" id="spesa-conto" required>
-                  <option value="Condiviso" selected>Condiviso</option>
-                  <option value="Gioele">Gioele</option>
-                  <option value="Giovanna">Giovanna</option>
-                </select>
-              </div>
-              <div class="col-12 col-md-6">
-                <label for="spesa-nota" class="form-label">Nota</label>
-                <input type="text" class="form-control" id="spesa-nota" placeholder="Facoltativa">
-              </div>
+        <div class="card mt-3 mb-4">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+              <button type="button" id="spesa-nuova-button" class="btn btn-outline-primary">+ Nuova Spesa</button>
+              <button type="button" id="gestisci-voci-gruppi-button" class="btn btn-outline-secondary btn-sm">Gestisci voci/gruppi</button>
             </div>
 
-            <div id="spesa-feedback" class="alert d-none mt-3" role="alert"></div>
+            <div id="spesa-form-container" class="d-none mt-3">
+              <form id="spesa-form" novalidate>
+                <div class="row g-3">
+                  <div class="col-6 col-md-3">
+                    <label for="spesa-data" class="form-label">Data</label>
+                    <input type="date" class="form-control" id="spesa-data" required>
+                  </div>
+                  <div class="col-6 col-md-3">
+                    <label for="spesa-importo" class="form-label">Importo (&euro;)</label>
+                    <input type="number" class="form-control" id="spesa-importo" step="0.01" min="0" required>
+                  </div>
+                  <div class="col-6 col-md-3">
+                    <label for="spesa-voce" class="form-label">Voce spesa</label>
+                    <select class="form-select" id="spesa-voce" required></select>
+                  </div>
+                  <div class="col-6 col-md-3">
+                    <label for="spesa-gruppo" class="form-label">Gruppo spesa</label>
+                    <select class="form-select" id="spesa-gruppo" required></select>
+                  </div>
+                  <div class="col-6 col-md-3">
+                    <label for="spesa-metodo" class="form-label">Metodo pagamento</label>
+                    <select class="form-select" id="spesa-metodo" required>
+                      <option value="Contanti">Contanti</option>
+                      <option value="Carta">Carta</option>
+                      <option value="Satispay">Satispay</option>
+                      <option value="Bonifico">Bonifico</option>
+                    </select>
+                  </div>
+                  <div class="col-6 col-md-3">
+                    <label for="spesa-conto" class="form-label">Quale Conto</label>
+                    <select class="form-select" id="spesa-conto" required>
+                      <option value="Condiviso" selected>Condiviso</option>
+                      <option value="Gioele">Gioele</option>
+                      <option value="Giovanna">Giovanna</option>
+                    </select>
+                  </div>
+                  <div class="col-12 col-md-6">
+                    <label for="spesa-nota" class="form-label">Nota</label>
+                    <input type="text" class="form-control" id="spesa-nota" placeholder="Facoltativa">
+                  </div>
+                </div>
 
-            <div class="mt-3 d-flex gap-2">
-              <button type="submit" id="spesa-submit-button" class="btn btn-primary">Salva spesa</button>
-              <button type="button" id="annulla-modifica-button" class="btn btn-outline-secondary">Annulla</button>
-            </div>
-          </form>
-        </div>
+                <div id="spesa-feedback" class="alert d-none mt-3" role="alert"></div>
 
-        <h5 class="mt-4">Spese recenti</h5>
-        <div class="mb-3">
-          <button type="button" id="filtro-spese-toggle-button" class="btn btn-outline-secondary btn-sm">Filtra</button>
-        </div>
-
-        <div id="filtro-spese-container" class="d-none">
-          <div class="row g-2 align-items-end mb-3">
-            <div class="col-6 col-md-2">
-              <label for="filtro-spese-mese" class="form-label">Mese</label>
-              <input type="month" class="form-control form-control-sm" id="filtro-spese-mese">
-            </div>
-            <div class="col-6 col-md-2">
-              <label for="filtro-spese-voce" class="form-label">Voce</label>
-              <select class="form-select form-select-sm" id="filtro-spese-voce">
-                <option value="">Tutte</option>
-              </select>
-            </div>
-            <div class="col-6 col-md-2">
-              <label for="filtro-spese-gruppo" class="form-label">Gruppo</label>
-              <select class="form-select form-select-sm" id="filtro-spese-gruppo">
-                <option value="">Tutti</option>
-              </select>
-            </div>
-            <div class="col-6 col-md-2">
-              <label for="filtro-spese-metodo" class="form-label">Metodo</label>
-              <select class="form-select form-select-sm" id="filtro-spese-metodo">
-                <option value="">Tutti</option>
-                <option value="Contanti">Contanti</option>
-                <option value="Carta">Carta</option>
-                <option value="Satispay">Satispay</option>
-                <option value="Bonifico">Bonifico</option>
-              </select>
-            </div>
-            <div class="col-6 col-md-2">
-              <label for="filtro-spese-conto" class="form-label">Conto</label>
-              <select class="form-select form-select-sm" id="filtro-spese-conto">
-                <option value="">Tutti</option>
-                <option value="Condiviso">Condiviso</option>
-                <option value="Gioele">Gioele</option>
-                <option value="Giovanna">Giovanna</option>
-                <option value="Non specificato">Non specificato</option>
-              </select>
-            </div>
-            <div class="col-6 col-md-2">
-              <button type="button" id="filtro-spese-reset-button" class="btn btn-outline-secondary btn-sm w-100">Cancella filtri</button>
+                <div class="mt-3 d-flex gap-2">
+                  <button type="submit" id="spesa-submit-button" class="btn btn-primary">Salva spesa</button>
+                  <button type="button" id="annulla-modifica-button" class="btn btn-outline-secondary">Annulla</button>
+                </div>
+              </form>
             </div>
           </div>
         </div>
-        <div id="spese-tabella-desktop-container" class="table-responsive">
-          <table class="table table-sm table-striped align-middle">
-            <thead>
-              <tr>
-                <th>Data</th>
-                <th>Importo</th>
-                <th>Voce spesa</th>
-                <th>Gruppo spesa</th>
-                <th>Metodo</th>
-                <th>Conto</th>
-                <th>Nota</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody id="spese-table-body"></tbody>
-          </table>
+
+        <div class="card">
+          <div class="card-body">
+            <h5>Spese recenti</h5>
+            <div class="mb-3">
+              <button type="button" id="filtro-spese-toggle-button" class="btn btn-outline-secondary btn-sm">Filtra</button>
+            </div>
+
+            <div id="filtro-spese-container" class="d-none">
+              <div class="row g-2 align-items-end mb-3">
+                <div class="col-6 col-md-2">
+                  <label for="filtro-spese-mese" class="form-label">Mese</label>
+                  <input type="month" class="form-control form-control-sm" id="filtro-spese-mese">
+                </div>
+                <div class="col-6 col-md-2">
+                  <label for="filtro-spese-voce" class="form-label">Voce</label>
+                  <select class="form-select form-select-sm" id="filtro-spese-voce">
+                    <option value="">Tutte</option>
+                  </select>
+                </div>
+                <div class="col-6 col-md-2">
+                  <label for="filtro-spese-gruppo" class="form-label">Gruppo</label>
+                  <select class="form-select form-select-sm" id="filtro-spese-gruppo">
+                    <option value="">Tutti</option>
+                  </select>
+                </div>
+                <div class="col-6 col-md-2">
+                  <label for="filtro-spese-metodo" class="form-label">Metodo</label>
+                  <select class="form-select form-select-sm" id="filtro-spese-metodo">
+                    <option value="">Tutti</option>
+                    <option value="Contanti">Contanti</option>
+                    <option value="Carta">Carta</option>
+                    <option value="Satispay">Satispay</option>
+                    <option value="Bonifico">Bonifico</option>
+                  </select>
+                </div>
+                <div class="col-6 col-md-2">
+                  <label for="filtro-spese-conto" class="form-label">Conto</label>
+                  <select class="form-select form-select-sm" id="filtro-spese-conto">
+                    <option value="">Tutti</option>
+                    <option value="Condiviso">Condiviso</option>
+                    <option value="Gioele">Gioele</option>
+                    <option value="Giovanna">Giovanna</option>
+                    <option value="Non specificato">Non specificato</option>
+                  </select>
+                </div>
+                <div class="col-6 col-md-2">
+                  <button type="button" id="filtro-spese-reset-button" class="btn btn-outline-secondary btn-sm w-100">Cancella filtri</button>
+                </div>
+              </div>
+            </div>
+            <div id="spese-tabella-desktop-container" class="table-responsive">
+              <table class="table table-sm table-striped align-middle">
+                <thead>
+                  <tr>
+                    <th>Data</th>
+                    <th>Importo</th>
+                    <th>Voce spesa</th>
+                    <th>Gruppo spesa</th>
+                    <th>Metodo</th>
+                    <th>Conto</th>
+                    <th>Nota</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="spese-table-body"></tbody>
+              </table>
+            </div>
+            <div id="spese-cards-mobile"></div>
+          </div>
         </div>
-        <div id="spese-cards-mobile"></div>
       </div>
       <div class="tab-pane fade" id="dashboard-pane" role="tabpanel" aria-labelledby="dashboard-tab" tabindex="0">
         <div class="row g-3 align-items-end mt-1">
