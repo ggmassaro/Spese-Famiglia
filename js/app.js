@@ -917,6 +917,10 @@ const dettaglioBudgetTbody = document.getElementById("dettaglio-budget-tbody");
 const budgetNonCoperteBanner = document.getElementById("budget-non-coperte-banner");
 const budgetNonCoperteTesto = document.getElementById("budget-non-coperte-testo");
 const budgetNonCoperteVediButton = document.getElementById("budget-non-coperte-vedi-button");
+const budgetTotaleRiepilogo = document.getElementById("budget-totale-riepilogo");
+const budgetTotaleStatus = document.getElementById("budget-totale-status");
+const budgetTotaleProgressBar = document.getElementById("budget-totale-progress-bar");
+const budgetTotaleTesto = document.getElementById("budget-totale-testo");
 
 let budgetDelMeseCache = [];
 let speseDelMeseBudgetCache = [];
@@ -1163,6 +1167,40 @@ budgetNonCoperteVediButton.addEventListener("click", () => {
   apriDettaglioSpeseModale("Spese non coperte da nessun budget", nonCoperte, "Nessuna spesa non coperta.");
 });
 
+function aggiornaRiepilogoTotaleBudget() {
+  if (budgetDelMeseCache.length === 0) {
+    budgetTotaleRiepilogo.classList.add("d-none");
+    return;
+  }
+
+  const totaleBudget = budgetDelMeseCache.reduce((somma, b) => somma + Number(b.importo_mensile), 0);
+  const totaleSpeso = budgetDelMeseCache.reduce((somma, b) => somma + calcolaActualBudget(b), 0);
+  const percentuale = totaleBudget > 0 ? (totaleSpeso / totaleBudget) * 100 : 0;
+  const percentualeBarra = Math.min(Math.max(percentuale, 0), 100);
+
+  let coloreBarra = "bg-success";
+  let statoClasse = "status-ok";
+  if (percentuale > 100) {
+    coloreBarra = "bg-danger";
+    statoClasse = "status-over";
+  } else if (percentuale >= 90) {
+    coloreBarra = "bg-warning";
+    statoClasse = "status-warn";
+  }
+
+  const rimanenti = totaleBudget - totaleSpeso;
+  const statoTesto = percentuale > 100
+    ? `Sforato di ${formatImporto(Math.abs(rimanenti))}`
+    : `Rimangono ${formatImporto(rimanenti)}`;
+
+  budgetTotaleRiepilogo.classList.remove("d-none");
+  budgetTotaleProgressBar.className = `progress-bar ${coloreBarra}`;
+  budgetTotaleProgressBar.style.width = `${percentualeBarra}%`;
+  budgetTotaleStatus.className = `status-pill ${statoClasse}`;
+  budgetTotaleStatus.textContent = statoTesto;
+  budgetTotaleTesto.textContent = `Speso ${formatImporto(totaleSpeso)} di ${formatImporto(totaleBudget)}`;
+}
+
 function renderBudgetLista() {
   if (budgetDelMeseCache.length === 0) {
     budgetLista.innerHTML = '<p class="text-muted">Nessun budget impostato per questo mese.</p>';
@@ -1280,6 +1318,7 @@ async function ricaricaBudgetETotali() {
   budgetDelMeseCache = budgets;
   speseDelMeseBudgetCache = spese;
   renderBudgetLista();
+  aggiornaRiepilogoTotaleBudget();
   aggiornaBannerSpeseNonCoperte();
   nascondiBannerImportBudget();
 }
@@ -1299,6 +1338,7 @@ async function inizializzaBudgetTab() {
   budgetDelMeseCache = budgets;
   speseDelMeseBudgetCache = spese;
   renderBudgetLista();
+  aggiornaRiepilogoTotaleBudget();
   aggiornaBannerSpeseNonCoperte();
 
   if (budgetDelMeseCache.length === 0) {
