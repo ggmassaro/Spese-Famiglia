@@ -44,8 +44,9 @@ label {
 /* Card */
 .card {
   background: var(--bg-card);
-  border: none;
+  border: 1px solid var(--border-subtle);
   border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   color: var(--text-primary);
 }
 
@@ -120,9 +121,7 @@ label {
 }
 
 .tab-content {
-  background: var(--bg-card);
-  border: none !important;
-  border-radius: 16px;
+  background: transparent;
   margin-top: 12px;
 }
 
